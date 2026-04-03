@@ -35,7 +35,6 @@ const TOOLKIT_DEFAULTS: &[(&str, &str)] = &[
 pub struct Config {
     pub nav: NavigationConfig,
     pub zoom: ZoomConfig,
-    pub snap: SnapConfig,
     pub input: InputConfig,
     pub background: BackgroundConfig,
     pub decorations: DecorationConfig,
@@ -416,13 +415,6 @@ impl Config {
             zoom: ZoomConfig {
                 step: raw.zoom.step.unwrap_or(1.1),
                 fit_padding: raw.zoom.fit_padding.unwrap_or(100.0),
-            },
-            snap: SnapConfig {
-                enabled: raw.snap.enabled.unwrap_or(true),
-                gap: raw.snap.gap.unwrap_or(12.0),
-                distance: raw.snap.distance.unwrap_or(24.0),
-                break_force: raw.snap.break_force.unwrap_or(32.0),
-                same_edge: raw.snap.same_edge.unwrap_or(false),
             },
             input: InputConfig {
                 mod_key,

@@ -14,9 +14,8 @@ use smithay::{
 
 use smithay::input::pointer::CursorImageStatus;
 
-use crate::state::{Srwm, output_state};
+use crate::state::Srwm;
 use srwm::canvas::{self, CanvasPos, canvas_to_screen};
-use srwm::snap::{SnapState, snap_resize_edges};
 
 /// Tracks the resize lifecycle for a window. Stored in the surface data map
 /// (wrapped in `RefCell`) so that `compositor::commit()` can reposition
@@ -48,7 +47,6 @@ pub struct ResizeSurfaceGrab {
     pub last_clamped_location: Point<f64, Logical>,
     /// Throttle X11 configures to avoid overwhelming the client (X11 redraws synchronously).
     pub last_x11_configure: Option<std::time::Instant>,
-    pub snap: SnapState,
 }
 
 /// Check if `edges` includes a horizontal/vertical component via raw bit values.
@@ -165,34 +163,7 @@ impl PointerGrab<Srwm> for ResizeSurfaceGrab {
 
         let delta = clamped - self.start_data.location;
 
-        let (mut new_w, mut new_h) = compute_resize(self.edges, self.initial_window_size, delta);
-
-        // Snap active resize edges to nearby windows
-        if data.config.snap.enabled
-            && let Some(self_surface) = self.window.wl_surface().map(|s| s.into_owned())
-        {
-            let zoom = output_state(&self.output).zoom;
-            let (others, self_bar) = data.snap_targets(&self_surface);
-
-            snap_resize_edges(
-                &mut self.snap,
-                self.edges as u32,
-                (
-                    self.initial_window_location.x,
-                    self.initial_window_location.y,
-                ),
-                (self.initial_window_size.w, self.initial_window_size.h),
-                self_bar,
-                &mut new_w,
-                &mut new_h,
-                &others,
-                zoom,
-                data.config.snap.gap,
-                data.config.snap.distance,
-                data.config.snap.break_force,
-                data.config.snap.same_edge,
-            );
-        }
+        let (new_w, new_h) = compute_resize(self.edges, self.initial_window_size, delta);
 
         let new_size = Size::from((new_w, new_h));
         send_resize_configure(

@@ -86,8 +86,6 @@ size = 24                     # sets XCURSOR_SIZE
 [output]
 # Global output settings. Per-output scale/transform/mode/position
 # are configured in [[outputs]] sections below.
-name = "eDP-1"
-transform = "0"
 
 [output.outline]
 # color = "#ffffff"           # outline color for other monitors' viewports
@@ -98,7 +96,7 @@ transform = "0"
 # Examples:
 # shader_path = "~/.config/srwm/bg.glsl"   # custom GLSL fragment shader
 # tile_path = "~/.config/srwm/tile.png"     # tiled image (mutually exclusive with shader)
-# shader_path = "~/.config/srwm/bg/pink_cloud.glsl"
+shader_path = "~/.config/srwm/bg/dark_sea.glsl"
 
 # Keyboard bindings: "Modifier+...+Keysym" = "action [arg]"
 # Merges with defaults. Use "none" to unbind a default binding.
@@ -167,7 +165,7 @@ transform = "0"
 # "mod+alt+left" = "send-to-output left"
 # "mod+alt+right" = "send-to-output right"
 # "mod+l" = "spawn swaylock -f -c 000000 -kl"
-"mod+escape" = "quit"
+"mod+backspace" = "quit"
 "XF86AudioRaiseVolume" = "spawn wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%+"
 "XF86AudioLowerVolume" = "spawn wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%-"
 "XF86AudioMute" = "spawn wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
@@ -259,11 +257,11 @@ transform = "0"
 #
 # Examples:
 # # [[outputs]]
-# # name = "eDP-1"           # connector name (required)
+name = "eDP-1"           # connector name (required)
 # # scale = 1.5              # fractional scale (default: 1.0)
-# # transform = "normal"     # normal, 90, 180, 270, flipped, flipped-90, flipped-180, flipped-270
+transform = "normal"     # normal, 90, 180, 270, flipped, flipped-90, flipped-180, flipped-270
 # # position = "auto"        # "auto" (left-to-right) or [x, y] in layout coords
-# # mode = "preferred"       # "preferred", "1920x1080", or "2560x1440@144"
+mode = "preferred"       # "preferred", "1920x1080", or "2560x1440@144"
 # #
 # # [[outputs]]
 # # name = "HDMI-A-1"
@@ -301,3 +299,6 @@ transform = "0"
 # # [[window_rules]]
 # # title = "winit window"
 # # widget = true
+
+
+

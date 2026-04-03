@@ -15,20 +15,18 @@ use smithay::{
         GestureSwipeUpdateEvent as WlSwipeUpdate, GrabStartData,
     },
     reexports::wayland_protocols::xdg::shell::server::xdg_toplevel,
-    reexports::wayland_server::Resource,
     utils::{Logical, Point, SERIAL_COUNTER, Size},
     wayland::{compositor::with_states, seat::WaylandFocus},
 };
 
 use super::pointer::{edges_from_position, resize_cursor};
 use crate::grabs::{MoveSurfaceGrab, ResizeState, compute_resize, send_resize_configure};
-use crate::state::{FocusTarget, Srwm, output_state};
+use crate::state::{FocusTarget, Srwm};
 use srwm::canvas::{self, CanvasPos, canvas_to_screen};
 use srwm::config::{
     Action, BindingContext, ContinuousAction, Direction, GestureConfigEntry, GestureTrigger,
     ThresholdAction,
 };
-use srwm::snap::{SnapState, snap_resize_edges};
 
 /// Active gesture — decided at Begin, locked for the gesture's duration.
 pub enum GestureState {
@@ -45,7 +43,6 @@ pub enum GestureState {
         last_size: Size<i32, Logical>,
         cumulative: Point<f64, Logical>,
         last_x11_configure: Option<std::time::Instant>,
-        snap: SnapState,
     },
     /// Threshold swipe — accumulate delta, detect direction, fire once.
     SwipeThreshold {
@@ -355,12 +352,11 @@ impl Srwm {
             GestureState::SwipeResize {
                 window,
                 edges,
-                initial_location,
                 initial_size,
                 last_size,
                 cumulative,
                 last_x11_configure,
-                snap,
+                ..
             } => {
                 // Force focused_output back if it drifted during resize
                 if let Some(ref output) = self.gestures.pinned_output
@@ -399,68 +395,7 @@ impl Srwm {
 
                 *cumulative += clamped_delta;
 
-                let (mut new_w, mut new_h) = compute_resize(*edges, *initial_size, *cumulative);
-
-                if self.config.snap.enabled
-                    && let Some(ref output) = self.gestures.pinned_output
-                    && let Some(self_surface) = window.wl_surface().map(|s| s.into_owned())
-                {
-                    let zoom = output_state(output).zoom;
-                    // Can't call self.snap_targets() here — gesture_state is
-                    // mutably borrowed by the match arm.
-                    let self_bar = if self.decorations.contains_key(&self_surface.id()) {
-                        srwm::config::DecorationConfig::TITLE_BAR_HEIGHT
-                    } else {
-                        0
-                    };
-                    let mut others: Vec<srwm::snap::SnapRect> = Vec::new();
-                    for w in self.space.elements() {
-                        let Some(surface) = w.wl_surface() else {
-                            continue;
-                        };
-                        if *surface == self_surface {
-                            continue;
-                        }
-                        if srwm::config::applied_rule(&surface).is_some_and(|r| r.widget) {
-                            continue;
-                        }
-                        let Some(loc) = self.space.element_location(w) else {
-                            continue;
-                        };
-                        let size = w.geometry().size;
-                        let bar = if self.decorations.contains_key(&surface.id()) {
-                            srwm::config::DecorationConfig::TITLE_BAR_HEIGHT
-                        } else {
-                            0
-                        };
-                        others.push(srwm::snap::SnapRect {
-                            x_low: loc.x as f64,
-                            x_high: loc.x as f64 + size.w as f64,
-                            y_low: loc.y as f64 - bar as f64,
-                            y_high: loc.y as f64 + size.h as f64,
-                        });
-                    }
-
-                    let mut new_w_val = new_w;
-                    let mut new_h_val = new_h;
-                    snap_resize_edges(
-                        snap,
-                        *edges as u32,
-                        (initial_location.x, initial_location.y),
-                        (initial_size.w, initial_size.h),
-                        self_bar,
-                        &mut new_w_val,
-                        &mut new_h_val,
-                        &others,
-                        zoom,
-                        self.config.snap.gap,
-                        self.config.snap.distance,
-                        self.config.snap.break_force,
-                        self.config.snap.same_edge,
-                    );
-                    new_w = new_w_val;
-                    new_h = new_h_val;
-                }
+                let (new_w, new_h) = compute_resize(*edges, *initial_size, *cumulative);
 
                 let new_size = Size::from((new_w, new_h));
                 send_resize_configure(window, new_size, last_size, last_x11_configure);
@@ -976,7 +911,6 @@ impl Srwm {
             last_size: initial_size,
             cumulative: Point::from((0.0, 0.0)),
             last_x11_configure: None,
-            snap: SnapState::default(),
         });
     }
 

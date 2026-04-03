@@ -1339,45 +1339,6 @@ impl Srwm {
     pub fn load_xcursor(&mut self, name: &str) -> Option<&CursorFrames> {
         self.cursor.load_xcursor(name)
     }
-
-    /// Build snap target rectangles for all windows except `exclude`, skipping widgets.
-    pub fn snap_targets(&self, exclude: &WlSurface) -> (Vec<srwm::snap::SnapRect>, i32) {
-        let self_bar = if self.decorations.contains_key(&exclude.id()) {
-            srwm::config::DecorationConfig::TITLE_BAR_HEIGHT
-        } else {
-            0
-        };
-        let mut others = Vec::new();
-        for w in self.space.elements() {
-            let Some(surface) = w.wl_surface() else {
-                continue;
-            };
-            if *surface == *exclude {
-                continue;
-            }
-            if srwm::config::applied_rule(&surface).is_some_and(|r| r.widget) {
-                continue;
-            }
-            let Some(loc) = self.space.element_location(w) else {
-                continue;
-            };
-            let size = w.geometry().size;
-            let is_fullscreen = self.fullscreen.values().any(|fs| &fs.window == w);
-            let has_ssd = !is_fullscreen && self.decorations.contains_key(&surface.id());
-            let bar = if has_ssd {
-                srwm::config::DecorationConfig::TITLE_BAR_HEIGHT
-            } else {
-                0
-            };
-            others.push(srwm::snap::SnapRect {
-                x_low: loc.x as f64,
-                x_high: loc.x as f64 + size.w as f64,
-                y_low: loc.y as f64 - bar as f64,
-                y_high: loc.y as f64 + size.h as f64,
-            });
-        }
-        (others, self_bar)
-    }
 }
 
 #[cfg(test)]

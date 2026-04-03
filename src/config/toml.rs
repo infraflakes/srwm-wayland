@@ -12,7 +12,6 @@ pub(super) struct ConfigFile {
     pub cursor: CursorConfig,
     pub navigation: NavigationConfig,
     pub zoom: ZoomConfig,
-    pub snap: SnapConfig,
     pub output: OutputConfig,
     pub background: BackgroundFileConfig,
     pub decorations: DecorationFileConfig,
@@ -115,16 +114,6 @@ pub(super) struct EdgePanConfig {
 pub(super) struct ZoomConfig {
     pub step: Option<f64>,
     pub fit_padding: Option<f64>,
-}
-
-#[derive(Deserialize, Default)]
-#[serde(default, deny_unknown_fields)]
-pub(super) struct SnapConfig {
-    pub enabled: Option<bool>,
-    pub gap: Option<f64>,
-    pub distance: Option<f64>,
-    pub break_force: Option<f64>,
-    pub same_edge: Option<bool>,
 }
 
 #[derive(Deserialize, Default)]

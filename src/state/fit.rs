@@ -62,7 +62,7 @@ impl Srwm {
 
         // Compute fit size at zoom=1.0 — navigate_to_window will animate there
         let usable = self.get_usable_area();
-        let gap = self.config.snap.gap;
+        let gap = 0.0;
         let bar = self.window_ssd_bar(window);
 
         let target_w = usable.size.w - (2.0 * gap) as i32;

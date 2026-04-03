@@ -577,27 +577,6 @@ impl Default for ZoomConfig {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct SnapConfig {
-    pub enabled: bool,
-    pub gap: f64,
-    pub distance: f64,
-    pub break_force: f64,
-    pub same_edge: bool,
-}
-
-impl Default for SnapConfig {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            gap: 12.0,
-            distance: 24.0,
-            break_force: 32.0,
-            same_edge: false,
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
 pub struct InputConfig {
     pub mod_key: ModKey,
     pub focus_follows_mouse: bool,

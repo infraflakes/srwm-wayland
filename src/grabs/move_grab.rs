@@ -6,12 +6,10 @@ use smithay::{
     },
     output::Output,
     utils::{Logical, Point},
-    wayland::seat::WaylandFocus,
 };
 
 use crate::state::{Srwm, output_logical_size, output_state};
 use srwm::canvas::{CanvasPos, canvas_to_screen};
-use srwm::snap::{SnapParams, SnapState, update_axis};
 
 /// Which output edge is inhibited after a cross-output teleport.
 #[derive(Clone, Copy)]
@@ -26,7 +24,6 @@ pub struct MoveSurfaceGrab {
     pub start_data: GrabStartData<Srwm>,
     pub window: Window,
     pub initial_window_location: Point<i32, Logical>,
-    pub snap: SnapState,
     /// Output this grab is pinned to (uses its camera/zoom throughout).
     pub output: Output,
     /// After teleport, suppress edge-pan on the entry edge until cursor moves inward.
@@ -44,7 +41,6 @@ impl MoveSurfaceGrab {
             start_data,
             window,
             initial_window_location,
-            snap: SnapState::default(),
             output,
             inhibited_edge: None,
         }
@@ -223,7 +219,6 @@ impl PointerGrab<Srwm> for MoveSurfaceGrab {
                 (event.location.y + canvas_offset.y) as i32,
             ));
             self.output = new_output;
-            self.snap = SnapState::default();
             self.inhibited_edge = Some(entry_edge);
 
             // Map window at new position immediately.
@@ -238,66 +233,7 @@ impl PointerGrab<Srwm> for MoveSurfaceGrab {
         let natural_x = self.initial_window_location.x as f64 + delta.x;
         let natural_y = self.initial_window_location.y as f64 + delta.y;
 
-        let (final_x, final_y) = if !data.config.snap.enabled {
-            (natural_x, natural_y)
-        } else {
-            let zoom = output_state(&self.output).zoom;
-            let effective_distance = data.config.snap.distance / zoom;
-            let effective_break = data.config.snap.break_force / zoom;
-            let gap = data.config.snap.gap;
-
-            let Some(self_surface) = self.window.wl_surface().map(|s| s.into_owned()) else {
-                return;
-            };
-            let (others, self_bar) = data.snap_targets(&self_surface);
-            let window_size = self.window.geometry().size;
-            let extent_x = window_size.w as f64;
-            let extent_y = window_size.h as f64 + self_bar as f64;
-
-            // Use natural (un-snapped) positions for perpendicular ranges
-            let visual_y = natural_y - self_bar as f64;
-
-            let params_x = SnapParams {
-                extent: extent_x,
-                perp_low: visual_y,
-                perp_high: visual_y + extent_y,
-                horizontal: true,
-                others: &others,
-                gap,
-                threshold: effective_distance,
-                break_force: effective_break,
-                same_edge: data.config.snap.same_edge,
-            };
-            let final_x = update_axis(
-                &mut self.snap.x,
-                &mut self.snap.cooldown_x,
-                natural_x,
-                &params_x,
-            );
-
-            // Shift y into visual space (title bar top) for snapping,
-            // then convert back to geometry origin.
-            let params_y = SnapParams {
-                extent: extent_y,
-                perp_low: natural_x,
-                perp_high: natural_x + extent_x,
-                horizontal: false,
-                others: &others,
-                gap,
-                threshold: effective_distance,
-                break_force: effective_break,
-                same_edge: data.config.snap.same_edge,
-            };
-            let final_visual_y = update_axis(
-                &mut self.snap.y,
-                &mut self.snap.cooldown_y,
-                visual_y,
-                &params_y,
-            );
-            let final_y = final_visual_y + self_bar as f64;
-
-            (final_x, final_y)
-        };
+        let (final_x, final_y) = (natural_x, natural_y);
 
         let new_loc = Point::from((final_x as i32, final_y as i32));
         data.space.map_element(self.window.clone(), new_loc, false);

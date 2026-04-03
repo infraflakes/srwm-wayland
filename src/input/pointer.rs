@@ -445,7 +445,6 @@ impl Srwm {
             output,
             last_clamped_location: pos,
             last_x11_configure: None,
-            snap: srwm::snap::SnapState::default(),
         };
         pointer.set_grab(self, grab, serial, Focus::Clear);
     }
