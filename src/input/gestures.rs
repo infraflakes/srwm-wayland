@@ -95,7 +95,7 @@ impl Srwm {
 
     fn exit_fullscreen_for_gesture(&mut self) {
         self.gestures.exited_fullscreen = self.active_fullscreen().map(|fs| fs.window.clone());
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         let pos = pointer.current_location();
         self.exit_fullscreen_remap_pointer(pos);
     }
@@ -109,9 +109,9 @@ impl Srwm {
             self.exit_fullscreen_for_gesture();
         }
 
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.keyboard();
         let mods = keyboard.modifier_state();
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         let pos = pointer.current_location();
         let context = self.pointer_context(pos);
 
@@ -283,12 +283,12 @@ impl Srwm {
                     self.drift_pan(canvas_delta);
                 }
 
-                let pointer = self.seat.get_pointer().unwrap();
+                let pointer = self.seat.get_pointer().expect("seat has no pointer");
                 let pos = pointer.current_location();
                 self.warp_pointer(pos + canvas_delta);
             }
             GestureState::SwipeMove => {
-                let pointer = self.seat.get_pointer().unwrap();
+                let pointer = self.seat.get_pointer().expect("seat has no pointer");
                 let cursor_pos = pointer.current_location();
                 drop(pointer);
 
@@ -377,7 +377,7 @@ impl Srwm {
                         (os.camera, os.zoom)
                     };
                     let output_size = crate::state::output_logical_size(output);
-                    let pointer = self.seat.get_pointer().unwrap();
+                    let pointer = self.seat.get_pointer().expect("seat has no pointer");
                     let cur_screen =
                         canvas_to_screen(CanvasPos(pointer.current_location()), cam, zm).0;
                     drop(pointer);
@@ -393,7 +393,7 @@ impl Srwm {
                     Point::from((delta.x / zoom, delta.y / zoom))
                 };
                 // Compute cursor warp target (applied after match to avoid borrow conflict)
-                let pointer = self.seat.get_pointer().unwrap();
+                let pointer = self.seat.get_pointer().expect("seat has no pointer");
                 let warp_target = pointer.current_location() + clamped_delta;
                 drop(pointer);
 
@@ -557,7 +557,7 @@ impl Srwm {
             GestureState::SwipeMove => {
                 let serial = SERIAL_COUNTER.next_serial();
                 let time = Event::time_msec(&event);
-                let pointer = self.seat.get_pointer().unwrap();
+                let pointer = self.seat.get_pointer().expect("seat has no pointer");
                 pointer.unset_grab(self, serial, time);
             }
             GestureState::SwipeResize {
@@ -617,9 +617,9 @@ impl Srwm {
             }
         }
 
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.seat.get_keyboard().expect("seat has no keyboard");
         let mods = keyboard.modifier_state();
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.seat.get_pointer().expect("seat has no pointer");
         let pos = pointer.current_location();
         let context = self.pointer_context(pos);
 
@@ -689,7 +689,7 @@ impl Srwm {
 
                 let (cur_zoom, cur_camera) = self.gesture_camera_zoom();
                 if new_zoom != cur_zoom {
-                    let pointer = self.seat.get_pointer().unwrap();
+                    let pointer = self.seat.get_pointer().expect("seat has no pointer");
                     let pos = pointer.current_location();
                     let screen_pos = canvas_to_screen(CanvasPos(pos), cur_camera, cur_zoom).0;
 
@@ -755,7 +755,7 @@ impl Srwm {
                 let (cur_zoom, cur_camera) = self.gesture_camera_zoom();
                 let snapped = canvas::snap_zoom(cur_zoom);
                 if snapped != cur_zoom {
-                    let pointer = self.seat.get_pointer().unwrap();
+                    let pointer = self.seat.get_pointer().expect("seat has no pointer");
                     let pos = pointer.current_location();
                     let screen_pos = canvas_to_screen(CanvasPos(pos), cur_camera, cur_zoom).0;
                     if let Some(ref output) = self.gestures.pinned_output {
@@ -792,9 +792,9 @@ impl Srwm {
         let fingers = event.fingers();
         let time = Event::time_msec(&event);
 
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.seat.get_keyboard().expect("seat has no keyboard");
         let mods = keyboard.modifier_state();
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.seat.get_pointer().expect("seat has no pointer");
         let pos = pointer.current_location();
         let context = self.pointer_context(pos);
 
@@ -924,7 +924,7 @@ impl Srwm {
         }
         let serial = SERIAL_COUNTER.next_serial();
         self.space.raise_element(&window, true);
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.seat.get_keyboard().expect("seat has no keyboard");
         let Some(surface) = window.wl_surface().map(|s| s.into_owned()) else {
             return;
         };
@@ -932,7 +932,7 @@ impl Srwm {
         self.enforce_below_windows();
 
         let initial_window_location = self.space.element_location(&window).unwrap_or_default();
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.seat.get_pointer().expect("seat has no pointer");
         let grab = MoveSurfaceGrab::new(
             GrabStartData {
                 focus: None,
@@ -955,7 +955,7 @@ impl Srwm {
             return;
         };
         self.space.raise_element(&window, true);
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.seat.get_keyboard().expect("seat has no keyboard");
         keyboard.set_focus(self, Some(FocusTarget(wl_surface.clone())), serial);
         self.enforce_below_windows();
 
@@ -1041,7 +1041,7 @@ impl Srwm {
     // ── Client forwarding ──────────────────────────────────────────────
 
     fn forward_swipe_begin(&mut self, fingers: u32, time: u32) {
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.seat.get_pointer().expect("seat has no pointer");
         let serial = SERIAL_COUNTER.next_serial();
         pointer.gesture_swipe_begin(
             self,
@@ -1055,13 +1055,13 @@ impl Srwm {
     }
 
     fn forward_swipe_update(&mut self, delta: Point<f64, Logical>, time: u32) {
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.seat.get_pointer().expect("seat has no pointer");
         pointer.gesture_swipe_update(self, &WlSwipeUpdate { time, delta });
         pointer.frame(self);
     }
 
     fn forward_swipe_end(&mut self, cancelled: bool, time: u32) {
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.seat.get_pointer().expect("seat has no pointer");
         let serial = SERIAL_COUNTER.next_serial();
         pointer.gesture_swipe_end(
             self,
@@ -1075,7 +1075,7 @@ impl Srwm {
     }
 
     fn forward_pinch_begin(&mut self, fingers: u32, time: u32) {
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.seat.get_pointer().expect("seat has no pointer");
         let serial = SERIAL_COUNTER.next_serial();
         pointer.gesture_pinch_begin(
             self,
@@ -1095,7 +1095,7 @@ impl Srwm {
         rotation: f64,
         time: u32,
     ) {
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.seat.get_pointer().expect("seat has no pointer");
         pointer.gesture_pinch_update(
             self,
             &WlPinchUpdate {
@@ -1109,7 +1109,7 @@ impl Srwm {
     }
 
     fn forward_pinch_end(&mut self, cancelled: bool, time: u32) {
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.seat.get_pointer().expect("seat has no pointer");
         let serial = SERIAL_COUNTER.next_serial();
         pointer.gesture_pinch_end(
             self,
@@ -1123,7 +1123,7 @@ impl Srwm {
     }
 
     fn forward_hold_begin(&mut self, fingers: u32, time: u32) {
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.seat.get_pointer().expect("seat has no pointer");
         let serial = SERIAL_COUNTER.next_serial();
         pointer.gesture_hold_begin(
             self,
@@ -1137,7 +1137,7 @@ impl Srwm {
     }
 
     fn forward_hold_end(&mut self, cancelled: bool, time: u32) {
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.seat.get_pointer().expect("seat has no pointer");
         let serial = SERIAL_COUNTER.next_serial();
         pointer.gesture_hold_end(
             self,

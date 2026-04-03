@@ -609,7 +609,7 @@ impl SessionLockHandler for Srwm {
             self.loop_handle.remove(pending.timer_token);
         }
         let serial = smithay::utils::SERIAL_COUNTER.next_serial();
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         pointer.unset_grab(self, serial, 0);
 
         self.cursor.exec_cursor_show_at = None;
@@ -617,7 +617,7 @@ impl SessionLockHandler for Srwm {
         self.cursor.cursor_status = smithay::input::pointer::CursorImageStatus::default_named();
         // Clear keyboard focus — no window should be interactable
         let serial = smithay::utils::SERIAL_COUNTER.next_serial();
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.keyboard();
         keyboard.set_focus(self, None::<FocusTarget>, serial);
         self.mark_all_dirty();
     }
@@ -629,7 +629,7 @@ impl SessionLockHandler for Srwm {
         // Restore focus to the most recent window
         if let Some(window) = self.focus_history.first().cloned() {
             let serial = smithay::utils::SERIAL_COUNTER.next_serial();
-            let keyboard = self.seat.get_keyboard().unwrap();
+            let keyboard = self.keyboard();
             let focus = window.wl_surface().map(|s| FocusTarget(s.into_owned()));
             keyboard.set_focus(self, focus, serial);
         }

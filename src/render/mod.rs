@@ -442,7 +442,7 @@ pub fn build_cursor_elements(
     if alpha <= 0.0 {
         return vec![];
     }
-    let pointer = state.seat.get_pointer().unwrap();
+    let pointer = state.pointer();
     let canvas_pos = pointer.current_location();
     // Custom elements are in screen-local physical coords
     let screen_pos = canvas_to_screen(CanvasPos(canvas_pos), camera, zoom).0;
@@ -1267,7 +1267,7 @@ fn build_output_outline_elements(
 /// Sync foreign-toplevel protocol state with the current window list.
 /// Call once per frame iteration (not per-output).
 pub fn refresh_foreign_toplevels(state: &mut crate::state::Srwm) {
-    let keyboard = state.seat.get_keyboard().unwrap();
+    let keyboard = state.keyboard();
     let focused = keyboard.current_focus().map(|f| f.0);
     let outputs: Vec<Output> = state.space.outputs().cloned().collect();
     srwm::protocols::foreign_toplevel::refresh::<crate::state::Srwm>(

@@ -78,7 +78,7 @@ impl Srwm {
                     self.on_pointer_motion_absolute::<I>(event)
                 }
                 InputEvent::PointerButton { event } => {
-                    let pointer = self.seat.get_pointer().unwrap();
+                    let pointer = self.pointer();
                     pointer.button(
                         self,
                         &smithay::input::pointer::ButtonEvent {
@@ -91,7 +91,7 @@ impl Srwm {
                     pointer.frame(self);
                 }
                 InputEvent::PointerAxis { event } => {
-                    let pointer = self.seat.get_pointer().unwrap();
+                    let pointer = self.pointer();
                     let mut frame =
                         smithay::input::pointer::AxisFrame::new(Event::time_msec(&event))
                             .source(event.source());
@@ -142,7 +142,7 @@ impl Srwm {
 
         // When session is locked, only allow VT switching — forward everything else
         if !matches!(self.session_lock, crate::state::SessionLock::Unlocked) {
-            let keyboard = self.seat.get_keyboard().unwrap();
+            let keyboard = self.keyboard();
             keyboard.input::<(), _>(
                 self,
                 keycode,
@@ -175,7 +175,7 @@ impl Srwm {
             self.held_action = None;
         }
 
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.keyboard();
 
         let action = keyboard.input(
             self,
@@ -404,7 +404,7 @@ impl Srwm {
             .or(Some(window))
             .and_then(|w| w.wl_surface().map(|s| FocusTarget(s.into_owned())));
 
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.keyboard();
         let already_focused = focus_surface
             .as_ref()
             .is_some_and(|target| keyboard.current_focus().is_some_and(|f| f.0 == target.0));
@@ -424,7 +424,7 @@ impl Srwm {
         serial: smithay::utils::Serial,
         time: u32,
     ) {
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         let new_focus = pointer.current_focus();
         let focus_changed = old_focus.as_ref().map(|f| &f.0) != new_focus.as_ref().map(|f| &f.0);
 
@@ -465,7 +465,7 @@ impl Srwm {
     /// Activate a pointer constraint if the pointer is over the constraining surface
     /// and within the constraint region.
     pub(crate) fn maybe_activate_pointer_constraint(&self) {
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         let Some(focus) = pointer.current_focus() else {
             return;
         };
@@ -510,7 +510,7 @@ impl Srwm {
         if !matches!(self.session_lock, crate::state::SessionLock::Unlocked) {
             let serial = SERIAL_COUNTER.next_serial();
             let time = Event::time_msec(&event);
-            let pointer = self.seat.get_pointer().unwrap();
+            let pointer = self.pointer();
             let focus = self
                 .active_output()
                 .and_then(|o| self.lock_surfaces.get(&o))
@@ -534,7 +534,7 @@ impl Srwm {
         }
         let serial = SERIAL_COUNTER.next_serial();
         let time = Event::time_msec(&event);
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         let old_focus = pointer.current_focus();
         self.dispatch_pointer_focus(&pointer, screen_pos, canvas_pos, serial, time);
         self.update_pointer_constraint(old_focus, serial, time);
@@ -547,7 +547,7 @@ impl Srwm {
     fn on_pointer_motion_relative<I: InputBackend>(&mut self, event: I::PointerMotionEvent) {
         // When locked, pointer only targets the lock surface
         if !matches!(self.session_lock, crate::state::SessionLock::Unlocked) {
-            let pointer = self.seat.get_pointer().unwrap();
+            let pointer = self.pointer();
             let old_pos = pointer.current_location();
             let delta = event.delta();
             let new_pos: Point<f64, smithay::utils::Logical> =
@@ -576,7 +576,7 @@ impl Srwm {
             return;
         }
 
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         let old_canvas = pointer.current_location();
         let serial = SERIAL_COUNTER.next_serial();
         let time = Event::time_msec(&event);

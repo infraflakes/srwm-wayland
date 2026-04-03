@@ -89,7 +89,7 @@ impl PointerGrab<Srwm> for PanGrab {
             // mutex is held, so accessing the seat there would deadlock.
             if self.from_empty_canvas && !self.dragged {
                 let serial = SERIAL_COUNTER.next_serial();
-                let keyboard = data.seat.get_keyboard().unwrap();
+                let keyboard = data.keyboard();
                 keyboard.set_focus(data, None::<FocusTarget>, serial);
             }
             // Release panning lock and launch momentum so the viewport coasts

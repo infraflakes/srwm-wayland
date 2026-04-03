@@ -48,7 +48,7 @@ impl Srwm {
         let serial = SERIAL_COUNTER.next_serial();
         let button = event.button_code();
         let button_state = event.state();
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
 
         // Buffer BTN_MIDDLE release while a pending click is waiting
         if button == config::BTN_MIDDLE
@@ -70,7 +70,7 @@ impl Srwm {
             // the click and enter window-move mode. Otherwise flush to client (paste).
             // Skip buffering when a modifier binding matches (e.g. alt+middle → fullscreen).
             if button == config::BTN_MIDDLE && {
-                let kb = self.seat.get_keyboard().unwrap();
+                let kb = self.keyboard();
                 let ctx = self.pointer_context(pointer.current_location());
                 self.config
                     .mouse_button_lookup_ctx(&kb.modifier_state(), button, ctx)
@@ -100,7 +100,7 @@ impl Srwm {
                 }
             }
             let mut pos = pointer.current_location();
-            let keyboard = self.seat.get_keyboard().unwrap();
+            let keyboard = self.keyboard();
             let mods = keyboard.modifier_state();
 
             // During fullscreen: bound clicks exit fullscreen first and
@@ -433,16 +433,16 @@ impl Srwm {
     pub(super) fn on_pointer_axis<I: InputBackend>(&mut self, event: I::PointerAxisEvent) {
         // When pointer is over a layer surface, forward scroll directly (no pan/zoom)
         if self.pointer_over_layer {
-            let pointer = self.seat.get_pointer().unwrap();
+            let pointer = self.pointer();
             let frame = build_client_axis_frame::<I>(&event);
             pointer.axis(self, frame);
             pointer.frame(self);
             return;
         }
 
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.keyboard();
         let mods = keyboard.modifier_state();
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         let pos = pointer.current_location();
         let source = event.source();
 

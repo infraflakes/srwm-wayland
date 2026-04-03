@@ -43,7 +43,7 @@ impl Srwm {
                 crate::state::spawn_command(cmd);
             }
             Action::CloseWindow => {
-                let keyboard = self.seat.get_keyboard().unwrap();
+                let keyboard = self.keyboard();
                 if let Some(focus) = keyboard.current_focus() {
                     let window = self
                         .space
@@ -56,7 +56,7 @@ impl Srwm {
                 }
             }
             Action::NudgeWindow(dir) => {
-                let keyboard = self.seat.get_keyboard().unwrap();
+                let keyboard = self.keyboard();
                 if let Some(focus) = keyboard.current_focus() {
                     if srwm::config::applied_rule(&focus.0).is_some_and(|r| r.widget) {
                         return;
@@ -97,7 +97,7 @@ impl Srwm {
                 self.update_output_from_camera();
 
                 // Shift pointer so cursor stays at the same screen position
-                let pointer = self.seat.get_pointer().unwrap();
+                let pointer = self.pointer();
                 let pos = pointer.current_location();
                 let new_pos = pos + delta;
                 let under = self.surface_under(new_pos, None);
@@ -114,7 +114,7 @@ impl Srwm {
                 pointer.frame(self);
             }
             Action::CenterWindow => {
-                let keyboard = self.seat.get_keyboard().unwrap();
+                let keyboard = self.keyboard();
                 let focused_non_widget = keyboard.current_focus().and_then(|focus| {
                     if srwm::config::applied_rule(&focus.0).is_some_and(|r| r.widget) {
                         return None;
@@ -129,7 +129,9 @@ impl Srwm {
                 } else {
                     // No focused non-widget window — find and focus the closest to viewport center
                     let vc = self.usable_center_screen();
-                    let (camera, zoom) = self.with_output_state(|os| (os.camera, os.zoom));
+                    let (camera, zoom) = self
+                        .with_output_state(|os| (os.camera, os.zoom))
+                        .unwrap_or_default();
                     let center_x = camera.x + vc.x / zoom;
                     let center_y = camera.y + vc.y / zoom;
                     let closest = self
@@ -157,7 +159,7 @@ impl Srwm {
                 }
             }
             Action::FocusCenter => {
-                let pointer = self.seat.get_pointer().unwrap();
+                let pointer = self.pointer();
                 let pos = pointer.current_location();
                 if let Some((window, _)) = self.space.element_under(pos) {
                     let window = window.clone();
@@ -171,7 +173,7 @@ impl Srwm {
                     Anchor(Point<f64, smithay::utils::Logical>),
                 }
 
-                let keyboard = self.seat.get_keyboard().unwrap();
+                let keyboard = self.keyboard();
                 let focused = keyboard.current_focus().and_then(|focus| {
                     self.space
                         .elements()
@@ -181,7 +183,7 @@ impl Srwm {
 
                 let viewport_size = self.get_viewport_size();
                 let vc = self.usable_center_screen();
-                let (camera, zoom) = self.with_output_state(|os| (os.camera, os.zoom));
+                let (camera, zoom) = self.with_output_state(|os| (os.camera, os.zoom)).unwrap_or_default();
                 let viewport_center = Point::from((camera.x + vc.x / zoom, camera.y + vc.y / zoom));
 
                 let (origin, skip) = if let Some(ref w) = focused {
@@ -243,7 +245,7 @@ impl Srwm {
                     Some(NavTarget::Anchor(p)) => {
                         // Unfocus so next CenterNearest searches from viewport center (= this anchor)
                         let serial = smithay::utils::SERIAL_COUNTER.next_serial();
-                        let keyboard = self.seat.get_keyboard().unwrap();
+                        let keyboard = self.keyboard();
                         keyboard.set_focus(self, None::<FocusTarget>, serial);
                         let vc = self.usable_center_screen();
                         self.with_output_state(|os| {
@@ -280,7 +282,9 @@ impl Srwm {
             }
             Action::HomeToggle => {
                 let viewport_size = self.get_viewport_size();
-                let (zoom, camera) = self.with_output_state(|os| (os.zoom, os.camera));
+                let (zoom, camera) = self
+                    .with_output_state(|os| (os.zoom, os.camera))
+                    .unwrap_or((1.0, Point::default()));
 
                 // At home means zoom ≈ 1.0 AND origin visible
                 let at_home = (zoom - 1.0).abs() < 0.01
@@ -288,7 +292,7 @@ impl Srwm {
 
                 if at_home {
                     // We're at home — return to saved position
-                    let ret = self.with_output_state(|os| os.home_return.take());
+                    let ret = self.with_output_state(|os| os.home_return.take()).flatten();
                     if let Some(ret) = ret {
                         let can_fullscreen = ret
                             .fullscreen_window
@@ -343,13 +347,14 @@ impl Srwm {
             Action::ZoomIn => {
                 let new_zoom = self.with_output_state(|os| {
                     (os.zoom * self.config.zoom_step).min(canvas::MAX_ZOOM)
-                });
+                }).unwrap_or(1.0);
                 let new_zoom = canvas::snap_zoom(new_zoom);
                 self.zoom_to_anchored(new_zoom);
             }
             Action::ZoomOut => {
                 let new_zoom = self
-                    .with_output_state(|os| (os.zoom / self.config.zoom_step).max(self.min_zoom()));
+                    .with_output_state(|os| (os.zoom / self.config.zoom_step).max(self.min_zoom()))
+                    .unwrap_or(1.0);
                 let new_zoom = canvas::snap_zoom(new_zoom);
                 self.zoom_to_anchored(new_zoom);
             }
@@ -415,7 +420,7 @@ impl Srwm {
                 } else if was_fullscreen.is_some() {
                     // Gesture already exited fullscreen — don't re-enter
                 } else {
-                    let keyboard = self.seat.get_keyboard().unwrap();
+                    let keyboard = self.keyboard();
                     if let Some(focus) = keyboard.current_focus() {
                         let window = self
                             .space
@@ -429,7 +434,7 @@ impl Srwm {
                 }
             }
             Action::FitWindow => {
-                let keyboard = self.seat.get_keyboard().unwrap();
+                let keyboard = self.keyboard();
                 if let Some(focus) = keyboard.current_focus() {
                     let window = self
                         .space
@@ -442,7 +447,7 @@ impl Srwm {
                 }
             }
             Action::SendToOutput(dir) => {
-                let keyboard = self.seat.get_keyboard().unwrap();
+                let keyboard = self.keyboard();
                 if let Some(focus) = keyboard.current_focus() {
                     if srwm::config::applied_rule(&focus.0).is_some_and(|r| r.widget) {
                         return;

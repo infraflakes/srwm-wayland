@@ -193,7 +193,7 @@ impl CompositorHandler for Srwm {
                     tracing::info!("Session lock confirmed");
                     // Give keyboard focus to the lock surface
                     let serial = smithay::utils::SERIAL_COUNTER.next_serial();
-                    let keyboard = self.seat.get_keyboard().unwrap();
+                    let keyboard = self.keyboard();
                     keyboard.set_focus(self, Some(FocusTarget(surface.clone())), serial);
                 }
                 return;
@@ -342,7 +342,7 @@ impl CompositorHandler for Srwm {
                             self.focus_history.retain(|w| w != &window);
                             if let Some(prev) = self.focus_history.first().cloned() {
                                 let serial = smithay::utils::SERIAL_COUNTER.next_serial();
-                                let keyboard = self.seat.get_keyboard().unwrap();
+                                let keyboard = self.keyboard();
                                 let focus = prev.wl_surface().map(|s| FocusTarget(s.into_owned()));
                                 keyboard.set_focus(self, focus, serial);
                             }
@@ -451,7 +451,7 @@ impl Srwm {
         &mut self,
         surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
     ) {
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.keyboard();
         let already_focused = keyboard
             .current_focus()
             .as_ref()

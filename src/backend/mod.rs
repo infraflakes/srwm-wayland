@@ -124,7 +124,7 @@ pub fn spawn_xwayland(
             }
 
             // Clear keyboard focus if it's on a dying X11 window
-            let keyboard = data.seat.get_keyboard().unwrap();
+            let keyboard = data.keyboard();
             if let Some(focused) = keyboard.current_focus()
                 && x11_windows
                     .iter()

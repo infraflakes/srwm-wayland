@@ -67,7 +67,7 @@ impl Srwm {
     pub(crate) fn warp_pointer(&mut self, new_pos: Point<f64, Logical>) {
         let under = self.focus_under(new_pos);
         let serial = smithay::utils::SERIAL_COUNTER.next_serial();
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         pointer.motion(
             self,
             under,
@@ -95,7 +95,7 @@ impl Srwm {
         self.update_output_from_camera();
 
         // Shift pointer canvas position so screen position stays fixed
-        let pos = self.seat.get_pointer().unwrap().current_location();
+        let pos = self.pointer().current_location();
         self.warp_pointer(pos + delta);
     }
 
@@ -117,7 +117,7 @@ impl Srwm {
         };
         self.update_output_from_camera();
 
-        let pos = self.seat.get_pointer().unwrap().current_location();
+        let pos = self.pointer().current_location();
         self.warp_pointer(pos + canvas_delta);
     }
 
@@ -215,7 +215,7 @@ impl Srwm {
 
         if let Some(delta) = result {
             self.update_output_from_camera();
-            let pos = self.seat.get_pointer().unwrap().current_location();
+            let pos = self.pointer().current_location();
             self.warp_pointer(pos + delta);
         }
     }
@@ -297,7 +297,7 @@ impl Srwm {
         if warp {
             if (new_zoom - old_zoom).abs() > 0.0 || (new_camera.x - old_camera.x).abs() > 0.0 {
                 self.update_output_from_camera();
-                let pos = self.seat.get_pointer().unwrap().current_location();
+                let pos = self.pointer().current_location();
                 let screen_x: f64 = (pos.x - old_camera.x) * old_zoom;
                 let screen_y: f64 = (pos.y - old_camera.y) * old_zoom;
                 let new_pos = Point::from((
@@ -372,7 +372,7 @@ impl Srwm {
         }
 
         if is_active {
-            let pos = self.seat.get_pointer().unwrap().current_location();
+            let pos = self.pointer().current_location();
             self.warp_pointer(pos + delta);
         }
     }
@@ -393,7 +393,7 @@ impl Srwm {
         }
 
         if is_active {
-            let pos = self.seat.get_pointer().unwrap().current_location();
+            let pos = self.pointer().current_location();
             self.warp_pointer(pos + canvas_delta);
         }
     }
@@ -425,7 +425,7 @@ impl Srwm {
         if is_active {
             let new_camera = output_state(output).camera;
             let delta = new_camera - old_camera;
-            let pos = self.seat.get_pointer().unwrap().current_location();
+            let pos = self.pointer().current_location();
             self.warp_pointer(pos + delta);
         }
     }
@@ -485,7 +485,7 @@ impl Srwm {
                     let os = output_state(output);
                     (os.zoom, os.camera)
                 };
-                let pos = self.seat.get_pointer().unwrap().current_location();
+                let pos = self.pointer().current_location();
                 let screen_x = (pos.x - old_camera.x) * old_zoom;
                 let screen_y = (pos.y - old_camera.y) * old_zoom;
                 let new_pos = Point::from((
@@ -498,7 +498,7 @@ impl Srwm {
             let cur_zoom = output_state(output).zoom;
             if cur_zoom != old_zoom && is_active {
                 let cur_camera = output_state(output).camera;
-                let pos = self.seat.get_pointer().unwrap().current_location();
+                let pos = self.pointer().current_location();
                 let screen_x = (pos.x - cur_camera.x) * old_zoom;
                 let screen_y = (pos.y - cur_camera.y) * old_zoom;
                 let new_pos = Point::from((

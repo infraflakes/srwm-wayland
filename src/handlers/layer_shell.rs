@@ -149,7 +149,7 @@ impl WlrLayerShellHandler for Srwm {
 
         // If this surface had exclusive keyboard focus, return focus to the top window
         let wl_surface = surface.wl_surface().clone();
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.keyboard();
         let current_focus = keyboard.current_focus();
         if current_focus.as_ref().is_some_and(|f| f.0 == wl_surface) {
             let serial = SERIAL_COUNTER.next_serial();

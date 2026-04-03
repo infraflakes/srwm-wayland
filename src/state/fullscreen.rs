@@ -68,7 +68,7 @@ impl Srwm {
 
         // Ensure keyboard focus is on the fullscreen window
         let serial = smithay::utils::SERIAL_COUNTER.next_serial();
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.keyboard();
         let focus = window.wl_surface().map(|s| FocusTarget(s.into_owned()));
         keyboard.set_focus(self, focus, serial);
     }

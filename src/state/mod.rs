@@ -753,7 +753,7 @@ impl Srwm {
             .or(Some(window.clone()))
             .and_then(|w| w.wl_surface().map(|s| FocusTarget(s.into_owned())));
 
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.keyboard();
         keyboard.set_focus(self, focus_surface, serial);
 
         self.maybe_activate_pointer_constraint();
@@ -860,7 +860,9 @@ impl Srwm {
         self.active_output()
             .and_then(|o| self.space.output_geometry(&o))
             .map(|viewport| {
-                let (cam, z) = self.with_output_state(|os| (os.camera, os.zoom));
+                let (cam, z) = self
+                    .with_output_state(|os| (os.camera, os.zoom))
+                    .unwrap_or_default();
                 Point::from((
                     (cam.x + viewport.size.w as f64 / (2.0 * z)) as i32 - or_geo.size.w / 2,
                     (cam.y + viewport.size.h as f64 / (2.0 * z)) as i32 - or_geo.size.h / 2,
@@ -905,7 +907,7 @@ impl Srwm {
 
     /// Forward a buffered middle-click press+release to the client.
     pub fn flush_middle_click(&mut self, press_time: u32, release_time: Option<u32>) {
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         let serial = smithay::utils::SERIAL_COUNTER.next_serial();
         pointer.button(
             self,
@@ -1083,12 +1085,10 @@ impl Srwm {
     }
 
     /// Batch-access per-output state for the active output under a single mutex lock.
-    pub fn with_output_state<R>(&self, f: impl FnOnce(&mut OutputState) -> R) -> R {
-        let output = self
-            .active_output()
-            .expect("No active output in with_output_state");
+    pub fn with_output_state<R>(&self, f: impl FnOnce(&mut OutputState) -> R) -> Option<R> {
+        let output = self.active_output()?;
         let mut guard = output_state(&output);
-        f(&mut guard)
+        Some(f(&mut guard))
     }
 
     /// Batch-access per-output state for a specific output under a single mutex lock.
@@ -1099,6 +1099,14 @@ impl Srwm {
     ) -> R {
         let mut guard = output_state(output);
         f(&mut guard)
+    }
+
+    // -- Input helpers --
+    pub fn keyboard(&self) -> smithay::input::keyboard::KeyboardHandle<Self> {
+        self.seat.get_keyboard().expect("seat has no keyboard")
+    }
+    pub fn pointer(&self) -> smithay::input::pointer::PointerHandle<Self> {
+        self.seat.get_pointer().expect("seat has no pointer")
     }
 
     // -- Per-output field accessors (delegate to active output's OutputState) --
@@ -1220,7 +1228,7 @@ impl Srwm {
                 model: &kb.model,
                 ..Default::default()
             };
-            let keyboard = self.seat.get_keyboard().unwrap();
+            let keyboard = self.keyboard();
             let num_lock = keyboard.modifier_state().num_lock;
             if let Err(err) = keyboard.set_xkb_config(self, xkb) {
                 tracing::warn!("Config reload: error updating keyboard layout: {err:?}");
@@ -1242,7 +1250,7 @@ impl Srwm {
         if new_config.repeat_rate != self.config.repeat_rate
             || new_config.repeat_delay != self.config.repeat_delay
         {
-            let keyboard = self.seat.get_keyboard().unwrap();
+            let keyboard = self.keyboard();
             keyboard.change_repeat_info(new_config.repeat_rate, new_config.repeat_delay);
         }
 

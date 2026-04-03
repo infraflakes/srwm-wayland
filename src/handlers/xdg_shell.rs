@@ -60,7 +60,7 @@ impl XdgShellHandler for Srwm {
         self.space.raise_element(&window, true);
         self.enforce_below_windows();
         let serial = smithay::utils::SERIAL_COUNTER.next_serial();
-        let keyboard = self.seat.get_keyboard().unwrap();
+        let keyboard = self.keyboard();
         keyboard.set_focus(self, Some(FocusTarget(wl_surface.clone())), serial);
         self.pending_center.insert(wl_surface);
     }
@@ -88,8 +88,8 @@ impl XdgShellHandler for Srwm {
             return;
         };
 
-        let keyboard = self.seat.get_keyboard().unwrap();
-        let pointer = self.seat.get_pointer().unwrap();
+        let keyboard = self.keyboard();
+        let pointer = self.pointer();
 
         if keyboard.is_grabbed()
             && !(keyboard.has_grab(serial)
@@ -188,7 +188,7 @@ impl XdgShellHandler for Srwm {
                 target.wl_surface().map(|s| FocusTarget(s.into_owned()))
             });
 
-            let keyboard = self.seat.get_keyboard().unwrap();
+            let keyboard = self.keyboard();
             if keyboard.current_focus().is_some_and(|f| f.0 == wl_surface) {
                 let serial = smithay::utils::SERIAL_COUNTER.next_serial();
                 keyboard.set_focus(self, parent_focus, serial);
@@ -234,7 +234,7 @@ impl XdgShellHandler for Srwm {
             return;
         };
 
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         let Some(start_data) = check_grab(&pointer, &wl_surface) else {
             return;
         };
@@ -269,7 +269,7 @@ impl XdgShellHandler for Srwm {
             return;
         };
 
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         let Some(start_data) = check_grab(&pointer, &wl_surface) else {
             return;
         };

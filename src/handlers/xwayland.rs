@@ -128,7 +128,7 @@ impl XwmHandler for Srwm {
 
         if let Some(smithay_window) = self.find_x11_window(&window) {
             if let Some(wl_surface) = smithay_window.wl_surface() {
-                let keyboard = self.seat.get_keyboard().unwrap();
+                let keyboard = self.keyboard();
                 if keyboard.current_focus().is_some_and(|f| f.0 == *wl_surface) {
                     keyboard.set_focus(self, None::<FocusTarget>, SERIAL_COUNTER.next_serial());
                 }
@@ -229,7 +229,7 @@ impl XwmHandler for Srwm {
             return;
         };
 
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         let start_data = GrabStartData {
             focus: Some((FocusTarget(wl_surface.clone()), pointer.current_location())),
             button: 0x110, // BTN_LEFT
@@ -284,7 +284,7 @@ impl XwmHandler for Srwm {
             return;
         }
 
-        let pointer = self.seat.get_pointer().unwrap();
+        let pointer = self.pointer();
         let start_data = GrabStartData {
             focus: Some((FocusTarget(wl_surface), pointer.current_location())),
             button: 0x110, // BTN_LEFT
@@ -427,7 +427,7 @@ impl XWaylandShellHandler for Srwm {
             self.focus_history.retain(|w| w != &smithay_window);
             if let Some(prev) = self.focus_history.first().cloned() {
                 let serial = SERIAL_COUNTER.next_serial();
-                let keyboard = self.seat.get_keyboard().unwrap();
+                let keyboard = self.keyboard();
                 let focus = prev.wl_surface().map(|s| FocusTarget(s.into_owned()));
                 keyboard.set_focus(self, focus, serial);
             }
