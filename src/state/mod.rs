@@ -313,8 +313,7 @@ pub struct Srwm {
     pub output_management_state: srwm::protocols::output_management::OutputManagementState,
     pub pending_screencopies: Vec<srwm::protocols::screencopy::Screencopy>,
     #[allow(dead_code)]
-    pub image_capture_source_state:
-        srwm::protocols::image_capture_source::ImageCaptureSourceState,
+    pub image_capture_source_state: srwm::protocols::image_capture_source::ImageCaptureSourceState,
     pub image_copy_capture_state: srwm::protocols::image_copy_capture::ImageCopyCaptureState,
     pub pending_captures: Vec<srwm::protocols::image_copy_capture::PendingCapture>,
     pub xdg_foreign_state: XdgForeignState,
@@ -354,6 +353,7 @@ pub struct Srwm {
     // -- global: session --
     pub session: Option<LibSeatSession>,
     pub input_devices: Vec<smithay::reexports::input::Device>,
+    pub active_layout: String,
 
     // -- global: autostart --
     pub autostart: Vec<String>,
@@ -362,7 +362,6 @@ pub struct Srwm {
     pub active_crtcs: HashSet<crtc::Handle>,
     pub redraws_needed: HashSet<crtc::Handle>,
     pub frames_pending: HashSet<crtc::Handle>,
-
 
     // -- global: config hot-reload --
     pub config_file_mtime: Option<std::time::SystemTime>,
@@ -461,15 +460,13 @@ impl Srwm {
                 |_| true,
             );
         let image_copy_capture_state =
-            srwm::protocols::image_copy_capture::ImageCopyCaptureState::new::<Self, _>(
-                &dh,
-                |_| true,
-            );
+            srwm::protocols::image_copy_capture::ImageCopyCaptureState::new::<Self, _>(&dh, |_| {
+                true
+            });
         let output_management_state =
-            srwm::protocols::output_management::OutputManagementState::new::<Self, _>(
-                &dh,
-                |_| true,
-            );
+            srwm::protocols::output_management::OutputManagementState::new::<Self, _>(&dh, |_| {
+                true
+            });
         let session_lock_manager_state = SessionLockManagerState::new::<Self, _>(&dh, |_| true);
         let xwayland_shell_state = XWaylandShellState::new::<Self>(&dh);
         let xdg_foreign_state = XdgForeignState::new::<Self>(&dh);
@@ -977,12 +974,9 @@ impl Srwm {
         canvas_pos: Point<f64, Logical>,
         os: &OutputState,
     ) -> Point<f64, Logical> {
-        let screen = srwm::canvas::canvas_to_screen(
-            srwm::canvas::CanvasPos(canvas_pos),
-            os.camera,
-            os.zoom,
-        )
-        .0;
+        let screen =
+            srwm::canvas::canvas_to_screen(srwm::canvas::CanvasPos(canvas_pos), os.camera, os.zoom)
+                .0;
         Point::from((
             screen.x + os.layout_position.x as f64,
             screen.y + os.layout_position.y as f64,
@@ -1139,9 +1133,10 @@ impl Srwm {
         loop {
             let dominated = self.space.elements().any(|w| {
                 w != skip
-                    && self.space.element_location(w).is_some_and(|loc| {
-                        (loc.x - pos.0).abs() <= 2 && (loc.y - pos.1).abs() <= 2
-                    })
+                    && self
+                        .space
+                        .element_location(w)
+                        .is_some_and(|loc| (loc.x - pos.0).abs() <= 2 && (loc.y - pos.1).abs() <= 2)
             });
             if !dominated {
                 break pos;
@@ -1306,10 +1301,18 @@ impl Srwm {
         };
         let mut others = Vec::new();
         for w in self.space.elements() {
-            let Some(surface) = w.wl_surface() else { continue };
-            if *surface == *exclude { continue }
-            if srwm::config::applied_rule(&surface).is_some_and(|r| r.widget) { continue }
-            let Some(loc) = self.space.element_location(w) else { continue };
+            let Some(surface) = w.wl_surface() else {
+                continue;
+            };
+            if *surface == *exclude {
+                continue;
+            }
+            if srwm::config::applied_rule(&surface).is_some_and(|r| r.widget) {
+                continue;
+            }
+            let Some(loc) = self.space.element_location(w) else {
+                continue;
+            };
             let size = w.geometry().size;
             let bar = if self.decorations.contains_key(&surface.id()) {
                 srwm::config::DecorationConfig::TITLE_BAR_HEIGHT

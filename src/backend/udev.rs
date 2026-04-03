@@ -6,18 +6,18 @@ use std::rc::Rc;
 use smithay::{
     backend::{
         allocator::{
-            gbm::{GbmAllocator, GbmBufferFlags, GbmDevice},
             Format, Fourcc, Modifier,
+            gbm::{GbmAllocator, GbmBufferFlags, GbmDevice},
         },
         drm::{
+            DrmDevice, DrmDeviceFd, DrmEvent, DrmNode, NodeType,
             compositor::{DrmCompositor, FrameFlags},
             exporter::gbm::GbmFramebufferExporter,
-            DrmDevice, DrmDeviceFd, DrmEvent, DrmNode, NodeType,
         },
         egl::{EGLContext, EGLDisplay},
         libinput::{LibinputInputBackend, LibinputSessionInterface},
         renderer::ImportDma,
-        session::{libseat::LibSeatSession, Event as SessionEvent, Session},
+        session::{Event as SessionEvent, Session, libseat::LibSeatSession},
         udev::{self, UdevBackend, UdevEvent},
     },
     output::{Mode, Output, PhysicalProperties, Subpixel},
@@ -35,7 +35,7 @@ use smithay_drm_extras::drm_scanner::{DrmScanEvent, DrmScanner};
 
 use crate::backend::Backend;
 use crate::render::OutputRenderElements;
-use crate::state::{init_output_state, Srwm};
+use crate::state::{Srwm, init_output_state};
 use srwm::config::{OutputMode as ConfigOutputMode, OutputPosition};
 
 const SUPPORTED_COLOR_FORMATS: &[Fourcc] = &[
@@ -561,9 +561,9 @@ pub fn init_udev(
                                             // still arrive; the virtual output retains its old
                                             // mode/size so position_transformed() works correctly.
                                             tracing::warn!(
-                                            "Last output disconnected — keeping virtual output '{}'",
-                                            surface.output.name()
-                                        );
+                                                "Last output disconnected — keeping virtual output '{}'",
+                                                surface.output.name()
+                                            );
                                             data.disconnected_outputs.insert(surface.output.name());
                                             data.exit_fullscreen_on(&surface.output);
                                             data.render

@@ -8,9 +8,7 @@ use smithay::{
         compositor::with_states,
         seat::WaylandFocus,
         shell::{
-            wlr_layer::{
-                Layer, LayerSurface, WlrLayerShellHandler, WlrLayerShellState,
-            },
+            wlr_layer::{Layer, LayerSurface, WlrLayerShellHandler, WlrLayerShellState},
             xdg::PopupSurface,
         },
     },
@@ -23,7 +21,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// set full anchors before smithay's validation hook runs on orphaned commits.
 pub(crate) struct LayerDestroyedMarker(pub AtomicBool);
 
-use crate::state::{CanvasLayer, Srwm, FocusTarget};
+use crate::state::{CanvasLayer, FocusTarget, Srwm};
 
 impl WlrLayerShellHandler for Srwm {
     fn shell_state(&mut self) -> &mut WlrLayerShellState {
@@ -58,10 +56,9 @@ impl WlrLayerShellHandler for Srwm {
             .as_ref()
             .and_then(|wl_out| {
                 let client = wl_out.client()?;
-                self.space.outputs().find(|o| {
-                    o.client_outputs(&client)
-                        .any(|co| co == *wl_out)
-                })
+                self.space
+                    .outputs()
+                    .find(|o| o.client_outputs(&client).any(|co| co == *wl_out))
             })
             .cloned()
             .or_else(|| self.active_output());
@@ -90,8 +87,10 @@ impl WlrLayerShellHandler for Srwm {
 
             // Configure with output width; height left to client
             let output_mode = resolved_output.current_mode().unwrap();
-            let output_w = resolved_output.current_transform()
-                .transform_size(output_mode.size.to_logical(1)).w;
+            let output_w = resolved_output
+                .current_transform()
+                .transform_size(output_mode.size.to_logical(1))
+                .w;
             desktop_surface.layer_surface().with_pending_state(|state| {
                 state.size = Some((output_w, 0).into());
             });

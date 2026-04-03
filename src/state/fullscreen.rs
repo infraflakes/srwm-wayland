@@ -4,13 +4,15 @@ use smithay::{
     wayland::seat::WaylandFocus,
 };
 
+use super::{FocusTarget, FullscreenState, Srwm};
 use srwm::window_ext::WindowExt;
-use super::{Srwm, FocusTarget, FullscreenState};
 
 impl Srwm {
     /// Enter fullscreen for the given window: lock viewport, expand window to fill screen.
     pub fn enter_fullscreen(&mut self, window: &Window) {
-        if window.wl_surface().as_ref()
+        if window
+            .wl_surface()
+            .as_ref()
             .and_then(|s| srwm::config::applied_rule(s))
             .is_some_and(|r| r.widget)
         {
@@ -26,13 +28,16 @@ impl Srwm {
         let viewport_size = self.get_viewport_size();
         let saved_location = self.space.element_location(window).unwrap_or_default();
 
-        self.fullscreen.insert(output, FullscreenState {
-            window: window.clone(),
-            saved_location,
-            saved_camera: self.camera(),
-            saved_zoom: self.zoom(),
-            saved_size: window.geometry().size,
-        });
+        self.fullscreen.insert(
+            output,
+            FullscreenState {
+                window: window.clone(),
+                saved_location,
+                saved_camera: self.camera(),
+                saved_zoom: self.zoom(),
+                saved_size: window.geometry().size,
+            },
+        );
 
         window.enter_fullscreen_configure(viewport_size);
 
@@ -67,7 +72,9 @@ impl Srwm {
 
     /// Exit fullscreen on the active output: restore window position, camera, and zoom.
     pub fn exit_fullscreen(&mut self) {
-        let Some(output) = self.active_output() else { return };
+        let Some(output) = self.active_output() else {
+            return;
+        };
         self.exit_fullscreen_on(&output);
     }
 
@@ -94,7 +101,8 @@ impl Srwm {
         &self,
         wl_surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
     ) -> Option<smithay::output::Output> {
-        self.fullscreen.iter()
+        self.fullscreen
+            .iter()
             .find(|(_, fs)| fs.window.wl_surface().as_deref() == Some(wl_surface))
             .map(|(o, _)| o.clone())
     }

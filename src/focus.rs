@@ -16,8 +16,8 @@ use smithay::{
         pointer::{
             AxisFrame, ButtonEvent, GestureHoldBeginEvent, GestureHoldEndEvent,
             GesturePinchBeginEvent, GesturePinchEndEvent, GesturePinchUpdateEvent,
-            GestureSwipeBeginEvent, GestureSwipeEndEvent, GestureSwipeUpdateEvent,
-            MotionEvent, PointerTarget, RelativeMotionEvent,
+            GestureSwipeBeginEvent, GestureSwipeEndEvent, GestureSwipeUpdateEvent, MotionEvent,
+            PointerTarget, RelativeMotionEvent,
         },
         touch::{
             DownEvent as TouchDownEvent, MotionEvent as TouchMotionEvent, TouchTarget,
@@ -123,12 +123,7 @@ impl PointerTarget<Srwm> for FocusTarget {
         <WlSurface as PointerTarget<Srwm>>::motion(&self.0, seat, data, event);
     }
 
-    fn relative_motion(
-        &self,
-        seat: &Seat<Srwm>,
-        data: &mut Srwm,
-        event: &RelativeMotionEvent,
-    ) {
+    fn relative_motion(&self, seat: &Seat<Srwm>, data: &mut Srwm, event: &RelativeMotionEvent) {
         <WlSurface as PointerTarget<Srwm>>::relative_motion(&self.0, seat, data, event);
     }
 
@@ -162,12 +157,7 @@ impl PointerTarget<Srwm> for FocusTarget {
         <WlSurface as PointerTarget<Srwm>>::gesture_swipe_update(&self.0, seat, data, event);
     }
 
-    fn gesture_swipe_end(
-        &self,
-        seat: &Seat<Srwm>,
-        data: &mut Srwm,
-        event: &GestureSwipeEndEvent,
-    ) {
+    fn gesture_swipe_end(&self, seat: &Seat<Srwm>, data: &mut Srwm, event: &GestureSwipeEndEvent) {
         <WlSurface as PointerTarget<Srwm>>::gesture_swipe_end(&self.0, seat, data, event);
     }
 
@@ -189,12 +179,7 @@ impl PointerTarget<Srwm> for FocusTarget {
         <WlSurface as PointerTarget<Srwm>>::gesture_pinch_update(&self.0, seat, data, event);
     }
 
-    fn gesture_pinch_end(
-        &self,
-        seat: &Seat<Srwm>,
-        data: &mut Srwm,
-        event: &GesturePinchEndEvent,
-    ) {
+    fn gesture_pinch_end(&self, seat: &Seat<Srwm>, data: &mut Srwm, event: &GesturePinchEndEvent) {
         <WlSurface as PointerTarget<Srwm>>::gesture_pinch_end(&self.0, seat, data, event);
     }
 
@@ -207,12 +192,7 @@ impl PointerTarget<Srwm> for FocusTarget {
         <WlSurface as PointerTarget<Srwm>>::gesture_hold_begin(&self.0, seat, data, event);
     }
 
-    fn gesture_hold_end(
-        &self,
-        seat: &Seat<Srwm>,
-        data: &mut Srwm,
-        event: &GestureHoldEndEvent,
-    ) {
+    fn gesture_hold_end(&self, seat: &Seat<Srwm>, data: &mut Srwm, event: &GestureHoldEndEvent) {
         <WlSurface as PointerTarget<Srwm>>::gesture_hold_end(&self.0, seat, data, event);
     }
 
@@ -222,33 +202,15 @@ impl PointerTarget<Srwm> for FocusTarget {
 }
 
 impl TouchTarget<Srwm> for FocusTarget {
-    fn down(
-        &self,
-        seat: &Seat<Srwm>,
-        data: &mut Srwm,
-        event: &TouchDownEvent,
-        seq: Serial,
-    ) {
+    fn down(&self, seat: &Seat<Srwm>, data: &mut Srwm, event: &TouchDownEvent, seq: Serial) {
         <WlSurface as TouchTarget<Srwm>>::down(&self.0, seat, data, event, seq);
     }
 
-    fn up(
-        &self,
-        seat: &Seat<Srwm>,
-        data: &mut Srwm,
-        event: &TouchUpEvent,
-        seq: Serial,
-    ) {
+    fn up(&self, seat: &Seat<Srwm>, data: &mut Srwm, event: &TouchUpEvent, seq: Serial) {
         <WlSurface as TouchTarget<Srwm>>::up(&self.0, seat, data, event, seq);
     }
 
-    fn motion(
-        &self,
-        seat: &Seat<Srwm>,
-        data: &mut Srwm,
-        event: &TouchMotionEvent,
-        seq: Serial,
-    ) {
+    fn motion(&self, seat: &Seat<Srwm>, data: &mut Srwm, event: &TouchMotionEvent, seq: Serial) {
         <WlSurface as TouchTarget<Srwm>>::motion(&self.0, seat, data, event, seq);
     }
 

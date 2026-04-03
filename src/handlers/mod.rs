@@ -3,8 +3,7 @@ pub mod layer_shell;
 pub mod xdg_shell;
 pub mod xwayland;
 
-use crate::state::{Srwm, FocusTarget};
-use srwm::window_ext::WindowExt;
+use crate::state::{FocusTarget, Srwm};
 use smithay::wayland::seat::WaylandFocus;
 use smithay::{
     backend::renderer::ImportDma,
@@ -47,6 +46,7 @@ use smithay::{
         },
     },
 };
+use srwm::window_ext::WindowExt;
 
 impl SeatHandler for Srwm {
     type KeyboardFocus = FocusTarget;
@@ -67,7 +67,8 @@ impl SeatHandler for Srwm {
         // Wait but let client surface cursors through (they take priority).
         if self.cursor.exec_cursor_deadline.is_some()
             && self
-                .cursor.exec_cursor_show_at
+                .cursor
+                .exec_cursor_show_at
                 .is_none_or(|t| std::time::Instant::now() >= t)
             && matches!(&image, CursorImageStatus::Named(icon) if *icon == CursorIcon::Default)
         {
@@ -257,17 +258,18 @@ impl PointerConstraintsHandler for Srwm {
     ) {
         use smithay::wayland::pointer_constraints::with_pointer_constraint;
 
-        let is_active = with_pointer_constraint(surface, pointer, |c| {
-            c.is_some_and(|c| c.is_active())
-        });
+        let is_active =
+            with_pointer_constraint(surface, pointer, |c| c.is_some_and(|c| c.is_active()));
         if !is_active {
             return;
         }
 
         // location is surface-local. Find the surface's canvas origin to convert.
-        let window = self.space.elements().find(|w| {
-            w.wl_surface().as_deref() == Some(surface)
-        }).cloned();
+        let window = self
+            .space
+            .elements()
+            .find(|w| w.wl_surface().as_deref() == Some(surface))
+            .cloned();
         if let Some(window) = window
             && let Some(loc) = self.space.element_location(&window)
         {
