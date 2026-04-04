@@ -6,7 +6,7 @@ license = "GPL-3.0-or-later"
 authors = ["Klim Kostiuk <2601074@gmail.com>"]
 
 [dependencies]
-smithay = { git = "https://github.com/Smithay/smithay.git", default-features = false, features = [
+smithay = { git = "https://github.com/Smithay/smithay.git", rev = "d28cf38", default-features = false, features = [
     "backend_winit",
     "backend_udev",
     "backend_drm",
@@ -19,7 +19,7 @@ smithay = { git = "https://github.com/Smithay/smithay.git", default-features = f
     "desktop",
     "xwayland",
 ] }
-smithay-drm-extras = { git = "https://github.com/Smithay/smithay.git" }
+smithay-drm-extras = { git = "https://github.com/Smithay/smithay.git", rev = "d28cf38" }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 xcursor = "0.3"
 serde = { version = "1", features = ["derive"] }
