@@ -3,13 +3,24 @@ BINDIR = $(PREFIX)/bin
 DATADIR = $(PREFIX)/share
 SYSCONFDIR ?= /etc
 
-.PHONY: build build-verbose fmt install uninstall test
+.PHONY: build build-verbose fmt install uninstall test clean
 
-build:
-	dagger call build --source=. export --path=./target/release/srwm
+# Default OS if you just hit enter
+DEFAULT_OS=debian
 
-build-verbose:
-	dagger call build --source=. --progress=plain export --path=./target/release/srwm
+build: clean
+	@echo "Select target OS [debian|arch|fedora] (default: $(DEFAULT_OS)):"
+	@read -p "> " OS; \
+	SELECTED_OS=$${OS:-$(DEFAULT_OS)}; \
+	echo "Building for $$SELECTED_OS..."; \
+	dagger call build --source=. --os=$$SELECTED_OS export --path=./target/release/srwm-$$SELECTED_OS
+
+build-verbose: clean
+	@echo "Select target OS [debian|arch|fedora] (default: $(DEFAULT_OS)):"
+	@read -p "> " OS; \
+	SELECTED_OS=$${OS:-$(DEFAULT_OS)}; \
+	echo "Building for $$SELECTED_OS..."; \
+	dagger call build --source=. --os=$$SELECTED_OS --progress=plain export --path=./target/release/srwm-$$SELECTED_OS
 
 fmt:
 	cargo fmt
@@ -17,6 +28,9 @@ fmt:
 test:
 	cargo test
 	cargo clippy
+
+clean:
+	rm -rf target
 
 install:
 	install -Dm755 target/release/srwm $(DESTDIR)$(BINDIR)/srwm
