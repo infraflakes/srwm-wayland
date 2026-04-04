@@ -22,12 +22,12 @@ build-verbose: clean
 	echo "Building for $$SELECTED_OS..."; \
 	dagger call build --source=. --os=$$SELECTED_OS --progress=plain export --path=./target/release/srwm-$$SELECTED_OS
 
+test:
+	@echo "Running tests..."
+	dagger call test --source=. --progress=plain
+
 fmt:
 	cargo fmt
-
-test:
-	cargo test
-	cargo clippy
 
 clean:
 	rm -rf target

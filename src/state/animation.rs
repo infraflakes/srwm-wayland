@@ -300,18 +300,18 @@ impl Srwm {
             .flatten()
             .unwrap_or((1.0, Point::default(), 1.0, Point::default(), false));
 
-        if warp
-            && ((new_zoom - old_zoom).abs() > 0.0 || (new_camera.x - old_camera.x).abs() > 0.0) {
-                self.update_output_from_camera();
-                let pos = self.pointer().current_location();
-                let screen_x: f64 = (pos.x - old_camera.x) * old_zoom;
-                let screen_y: f64 = (pos.y - old_camera.y) * old_zoom;
-                let new_pos = Point::from((
-                    screen_x / new_zoom + new_camera.x,
-                    screen_y / new_zoom + new_camera.y,
-                ));
-                self.warp_pointer(new_pos);
-            }
+        if warp && ((new_zoom - old_zoom).abs() > 0.0 || (new_camera.x - old_camera.x).abs() > 0.0)
+        {
+            self.update_output_from_camera();
+            let pos = self.pointer().current_location();
+            let screen_x: f64 = (pos.x - old_camera.x) * old_zoom;
+            let screen_y: f64 = (pos.y - old_camera.y) * old_zoom;
+            let new_pos = Point::from((
+                screen_x / new_zoom + new_camera.x,
+                screen_y / new_zoom + new_camera.y,
+            ));
+            self.warp_pointer(new_pos);
+        }
 
         // Final snapped check for blur
         if self

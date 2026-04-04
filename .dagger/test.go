@@ -2,28 +2,25 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"golang.org/x/sync/errgroup"
 	"srwm-wayland/internal/dagger"
 )
 
-// TestAll runs cargo test across all supported distributions
-func (m *SrwmWayland) TestAll(ctx context.Context, source *dagger.Directory) error {
-	platforms := []string{"debian", "arch", "fedora"}
-	g, ctx := errgroup.WithContext(ctx)
-
-	for _, p := range platforms {
-		platform := p // Shadow for closure
-		g.Go(func() error {
-			fmt.Printf("Testing on %s...\n", platform)
-			_, err := m.base(platform).
-				WithDirectory("/src", source.WithoutDirectory("target")).
-				WithWorkdir("/src").
-				WithExec([]string{"cargo", "test"}).
-				Sync(ctx)
-			return err
-		})
-	}
-
-	return g.Wait()
+// Test runs cargo test using the standard Rust environment.
+func (m *SrwmWayland) Test(ctx context.Context, source *dagger.Directory) *dagger.Container {
+	return dag.Container().
+		From("rust:latest").
+		WithEnvVariable("DEBIAN_FRONTEND", "noninteractive").
+		// Minimal dependencies needed just to compile the test binary
+		WithExec([]string{"apt-get", "update"}).
+		WithExec([]string{"apt-get", "install", "-y",
+			"pkg-config", "git", "libseat-dev", "libdisplay-info-dev",
+			"libinput-dev", "libudev-dev", "libgbm-dev", "libxkbcommon-dev",
+			"libwayland-dev", "libdrm-dev", "libpixman-1-dev", "libx11-dev",
+			"libxcursor-dev", "libxrandr-dev", "libxi-dev", "libxcb1-dev", "libgl-dev",
+		}).
+		WithExec([]string{"rustup", "component", "add", "clippy"}).
+		WithDirectory("/src", source.WithoutDirectory("target")).
+		WithWorkdir("/src").
+		WithExec([]string{"cargo", "test"}).
+		WithExec([]string{"cargo", "clippy"})
 }
