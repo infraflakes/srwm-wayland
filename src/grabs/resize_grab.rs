@@ -232,3 +232,176 @@ impl PointerGrab<Srwm> for ResizeSurfaceGrab {
 
     crate::grabs::forward_pointer_grab_methods!();
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use smithay::utils::{Point, Size};
+
+    fn sz(w: i32, h: i32) -> Size<i32, Logical> {
+        Size::from((w, h))
+    }
+    fn delta(x: f64, y: f64) -> Point<f64, Logical> {
+        Point::from((x, y))
+    }
+
+    // ── Edge detection ───────────────────────────────────────────────
+
+    #[test]
+    fn top_edge() {
+        assert!(has_top(xdg_toplevel::ResizeEdge::Top));
+        assert!(has_top(xdg_toplevel::ResizeEdge::TopLeft));
+        assert!(has_top(xdg_toplevel::ResizeEdge::TopRight));
+        assert!(!has_top(xdg_toplevel::ResizeEdge::Bottom));
+        assert!(!has_top(xdg_toplevel::ResizeEdge::Left));
+        assert!(!has_top(xdg_toplevel::ResizeEdge::Right));
+    }
+
+    #[test]
+    fn bottom_edge() {
+        assert!(has_bottom(xdg_toplevel::ResizeEdge::Bottom));
+        assert!(has_bottom(xdg_toplevel::ResizeEdge::BottomLeft));
+        assert!(has_bottom(xdg_toplevel::ResizeEdge::BottomRight));
+        assert!(!has_bottom(xdg_toplevel::ResizeEdge::Top));
+    }
+
+    #[test]
+    fn left_edge() {
+        assert!(has_left(xdg_toplevel::ResizeEdge::Left));
+        assert!(has_left(xdg_toplevel::ResizeEdge::TopLeft));
+        assert!(has_left(xdg_toplevel::ResizeEdge::BottomLeft));
+        assert!(!has_left(xdg_toplevel::ResizeEdge::Right));
+    }
+
+    #[test]
+    fn right_edge() {
+        assert!(has_right(xdg_toplevel::ResizeEdge::Right));
+        assert!(has_right(xdg_toplevel::ResizeEdge::TopRight));
+        assert!(has_right(xdg_toplevel::ResizeEdge::BottomRight));
+        assert!(!has_right(xdg_toplevel::ResizeEdge::Left));
+    }
+
+    // ── compute_resize ───────────────────────────────────────────────
+
+    #[test]
+    fn resize_right_increases_width() {
+        let (w, h) = compute_resize(
+            xdg_toplevel::ResizeEdge::Right,
+            sz(200, 100),
+            delta(50.0, 0.0),
+        );
+        assert_eq!(w, 250);
+        assert_eq!(h, 100);
+    }
+
+    #[test]
+    fn resize_left_increases_width_on_negative_delta() {
+        // Dragging left (negative x) on the left edge should grow the window
+        let (w, h) = compute_resize(
+            xdg_toplevel::ResizeEdge::Left,
+            sz(200, 100),
+            delta(-50.0, 0.0),
+        );
+        assert_eq!(w, 250);
+        assert_eq!(h, 100);
+    }
+
+    #[test]
+    fn resize_bottom_increases_height() {
+        let (w, h) = compute_resize(
+            xdg_toplevel::ResizeEdge::Bottom,
+            sz(200, 100),
+            delta(0.0, 30.0),
+        );
+        assert_eq!(w, 200);
+        assert_eq!(h, 130);
+    }
+
+    #[test]
+    fn resize_top_increases_height_on_negative_delta() {
+        let (w, h) = compute_resize(
+            xdg_toplevel::ResizeEdge::Top,
+            sz(200, 100),
+            delta(0.0, -40.0),
+        );
+        assert_eq!(w, 200);
+        assert_eq!(h, 140);
+    }
+
+    #[test]
+    fn resize_bottom_right_both_axes() {
+        let (w, h) = compute_resize(
+            xdg_toplevel::ResizeEdge::BottomRight,
+            sz(200, 100),
+            delta(10.0, 20.0),
+        );
+        assert_eq!(w, 210);
+        assert_eq!(h, 120);
+    }
+
+    #[test]
+    fn resize_top_left_both_axes() {
+        let (w, h) = compute_resize(
+            xdg_toplevel::ResizeEdge::TopLeft,
+            sz(200, 100),
+            delta(-15.0, -25.0),
+        );
+        assert_eq!(w, 215);
+        assert_eq!(h, 125);
+    }
+
+    #[test]
+    fn resize_clamps_to_minimum_1x1() {
+        let (w, h) = compute_resize(
+            xdg_toplevel::ResizeEdge::Right,
+            sz(10, 10),
+            delta(-500.0, -500.0),
+        );
+        assert_eq!(w, 1, "width should clamp to 1");
+        assert_eq!(h, 10, "height unchanged (right edge doesn't affect height)");
+    }
+
+    #[test]
+    fn resize_clamps_both_axes() {
+        let (w, h) = compute_resize(
+            xdg_toplevel::ResizeEdge::BottomRight,
+            sz(5, 5),
+            delta(-100.0, -100.0),
+        );
+        assert_eq!(w, 1);
+        assert_eq!(h, 1);
+    }
+
+    #[test]
+    fn resize_none_edge_no_change() {
+        let (w, h) = compute_resize(
+            xdg_toplevel::ResizeEdge::None,
+            sz(200, 100),
+            delta(50.0, 50.0),
+        );
+        assert_eq!(w, 200);
+        assert_eq!(h, 100);
+    }
+
+    #[test]
+    fn resize_zero_delta_no_change() {
+        let (w, h) = compute_resize(
+            xdg_toplevel::ResizeEdge::BottomRight,
+            sz(300, 200),
+            delta(0.0, 0.0),
+        );
+        assert_eq!(w, 300);
+        assert_eq!(h, 200);
+    }
+
+    #[test]
+    fn resize_fractional_delta_truncates() {
+        // 200 + 0.9 as i32 = 200 (truncation, not rounding)
+        let (w, _) = compute_resize(
+            xdg_toplevel::ResizeEdge::Right,
+            sz(200, 100),
+            delta(0.9, 0.0),
+        );
+        assert_eq!(w, 200);
+    }
+}

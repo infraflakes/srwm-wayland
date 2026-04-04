@@ -595,4 +595,142 @@ mod tests {
         let result = find_nearest(origin, &Direction::Right, items.into_iter(), None::<&&str>);
         assert_eq!(result, None);
     }
+
+    #[test]
+    fn friction_increases_with_speed() {
+        let slow = super::speed_dependent_friction(0.92, 100.0);
+        let fast = super::speed_dependent_friction(0.92, 2000.0);
+        assert!(
+            fast > slow,
+            "faster speed should yield higher friction: slow={slow}, fast={fast}"
+        );
+    }
+
+    #[test]
+    fn friction_clamped_below_one() {
+        let f = super::speed_dependent_friction(0.92, 100_000.0);
+        assert!(f < 1.0, "friction must stay below 1.0, got {f}");
+    }
+
+    #[test]
+    fn friction_monotonic_across_range() {
+        let base = 0.92;
+        let mut prev = speed_dependent_friction(base, 0.0);
+        for speed in (100..=5000).step_by(100) {
+            let curr = speed_dependent_friction(base, speed as f64);
+            assert!(
+                curr >= prev,
+                "friction should be monotonically non-decreasing: at speed {speed}, {curr} < {prev}"
+            );
+            prev = curr;
+        }
+    }
+
+    #[test]
+    fn friction_low_base_still_works() {
+        let f = super::speed_dependent_friction(0.80, 500.0);
+        assert!(
+            f >= 0.80 && f < 1.0,
+            "friction with low base should be in [0.80, 1.0), got {f}"
+        );
+    }
+
+    #[test]
+    fn friction_at_zero_speed_returns_low_friction() {
+        // friction=0.92 → low = (0.92-0.06).clamp(0.80,0.95) = 0.86
+        let f = speed_dependent_friction(0.92, 0.0);
+        assert!(
+            (f - 0.86).abs() < 1e-9,
+            "at zero speed should return low_friction (0.86), got {f}"
+        );
+    }
+
+    #[test]
+    fn friction_at_reference_speed_returns_high_friction() {
+        let f = speed_dependent_friction(0.92, 2500.0);
+        // high_friction = (0.92 + 0.025).clamp(0.95, 0.995) = 0.95
+        assert!(
+            (f - 0.95).abs() < 1e-9,
+            "at reference speed should return high_friction (0.95), got {f}"
+        );
+    }
+
+    #[test]
+    fn friction_above_reference_speed_clamps() {
+        // speed > 2500 should clamp t to 1.0, same as reference speed
+        let f_ref = speed_dependent_friction(0.92, 2500.0);
+        let f_high = speed_dependent_friction(0.92, 5000.0);
+        assert!(
+            (f_ref - f_high).abs() < 1e-9,
+            "above reference speed should clamp to high_friction"
+        );
+    }
+
+    #[test]
+    fn friction_monotonic_with_speed() {
+        let mut prev = speed_dependent_friction(0.92, 0.0);
+        for speed in (100..=2500).step_by(100) {
+            let f = speed_dependent_friction(0.92, speed as f64);
+            assert!(
+                f >= prev,
+                "friction should increase with speed: {f} < {prev} at speed={speed}"
+            );
+            prev = f;
+        }
+    }
+
+    #[test]
+    fn friction_mid_speed_interpolates() {
+        let f = speed_dependent_friction(0.92, 1250.0);
+        // t = 0.5, low = 0.86, high = 0.95
+        let expected = 0.86 + 0.5 * (0.95 - 0.86); // = 0.905  
+        assert!(
+            (f - expected).abs() < 1e-9,
+            "mid-speed should interpolate to {expected}, got {f}"
+        );
+    }
+
+    #[test]
+    fn friction_high_base_clamps_correctly() {
+        // friction=0.97 → low = (0.97-0.06).clamp(0.80,0.95) = 0.91
+        //                  high = (0.97+0.025).clamp(0.95,0.995) = 0.995
+        let f_low = speed_dependent_friction(0.97, 0.0);
+        let f_high = speed_dependent_friction(0.97, 2500.0);
+        assert!(
+            (f_low - 0.91).abs() < 1e-9,
+            "high base low_friction should be 0.91, got {f_low}"
+        );
+        assert!(
+            (f_high - 0.995).abs() < 1e-9,
+            "high base high_friction should be 0.995, got {f_high}"
+        );
+    }
+
+    #[test]
+    fn friction_low_base_clamps_correctly() {
+        // friction=0.80 → low = (0.80-0.06).clamp(0.80,0.95) = 0.80 (clamped)
+        //                  high = (0.80+0.025).clamp(0.95,0.995) = 0.95 (clamped)
+        let f_low = speed_dependent_friction(0.80, 0.0);
+        let f_high = speed_dependent_friction(0.80, 2500.0);
+        assert!(
+            (f_low - 0.80).abs() < 1e-9,
+            "low base low_friction should clamp to 0.80, got {f_low}"
+        );
+        assert!(
+            (f_high - 0.95).abs() < 1e-9,
+            "low base high_friction should clamp to 0.95, got {f_high}"
+        );
+    }
+
+    #[test]
+    fn friction_negative_speed_goes_below_low() {
+        // Negative speed produces t < 0, result < low_friction
+        // This is technically an edge case — callers should pass abs(speed)
+        let f_zero = speed_dependent_friction(0.92, 0.0);
+        let f_neg = speed_dependent_friction(0.92, -100.0);
+        assert!(
+            f_neg < f_zero,
+            "negative speed should produce lower friction than zero speed"
+        );
+    }
 }
