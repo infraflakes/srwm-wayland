@@ -16,6 +16,7 @@ func (m *SrwmWayland) Test(ctx context.Context, source *dagger.Directory) *dagge
 			"libinput-dev", "libudev-dev", "libgbm-dev", "libxkbcommon-dev",
 			"libwayland-dev", "libdrm-dev", "libpixman-1-dev", "libx11-dev",
 			"libxcursor-dev", "libxrandr-dev", "libxi-dev", "libxcb1-dev", "libgl-dev",
+			"libpipewire-0.3-dev", "libclang-dev",
 		}).
 		WithExec([]string{"rustup", "component", "add", "clippy", "rustfmt"}).
 		WithDirectory("/src", source.WithoutDirectory("target")).
