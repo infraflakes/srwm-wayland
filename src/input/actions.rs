@@ -517,9 +517,11 @@ impl Srwm {
                 self.pending_screenshot_screen = true;
             }
             Action::ConfirmScreenshot { write_to_disk } => {
+                self.restore_pointer_to_canvas();
                 self.confirm_screenshot(*write_to_disk);
             }
             Action::CancelScreenshot => {
+                self.restore_pointer_to_canvas();
                 self.screenshot_ui.close();
             }
             Action::ScreenshotTogglePointer => {

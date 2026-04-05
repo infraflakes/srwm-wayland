@@ -242,46 +242,89 @@ pub fn init_winit(
                         data.pending_screenshot = false;
                         data.pending_screenshot_screen = false;
 
-                        // Create an offscreen buffer of the current output to grab the full frame
                         use smithay::backend::renderer::{Bind, Offscreen};
-                        if let Ok(mut texture) = Offscreen::<
-                            smithay::backend::renderer::gles::GlesTexture,
-                        >::create_buffer(
-                            renderer,
-                            smithay::backend::allocator::Fourcc::Abgr8888,
-                            output_logical_size(&output)
-                                .to_buffer(1, smithay::utils::Transform::Normal),
-                        ) {
-                            let texture_for_map = texture.clone();
-                            if let Ok(mut offscreen_fb) = renderer.bind(&mut texture) {
-                                let res = damage_tracker.render_output(
+                        let buf_size = output_logical_size(&output)
+                            .to_buffer(1, smithay::utils::Transform::Normal);
+
+                        // WITH cursor (all_elements already has cursor)
+                        let tex_with =
+                            (|| -> Option<smithay::backend::renderer::gles::GlesTexture> {
+                                let mut texture = Offscreen::<
+                                    smithay::backend::renderer::gles::GlesTexture,
+                                >::create_buffer(
                                     renderer,
-                                    &mut offscreen_fb,
-                                    0, // draw everything
-                                    &all_elements,
-                                    [0.0f32, 0.0, 0.0, 1.0],
-                                );
-                                if res.is_ok() {
-                                    let default_output = data
-                                        .focused_output
-                                        .clone()
-                                        .unwrap_or_else(|| output.clone());
-                                    #[allow(clippy::mutable_key_type)]
-                                    let mut screenshots = std::collections::HashMap::new();
-                                    screenshots.insert(output.clone(), texture_for_map);
-                                    // For multi-monitor we'd do this for all outputs, but right now
-                                    // winit is 1-output and udev processes per-output. We'll grab just this one.
-                                    data.screenshot_ui.open(
-                                        renderer,
-                                        screenshots,
-                                        default_output,
-                                        !is_screen,
+                                    smithay::backend::allocator::Fourcc::Abgr8888,
+                                    buf_size,
+                                )
+                                .ok()?;
+                                let tex_clone = texture.clone();
+                                let mut fb = renderer.bind(&mut texture).ok()?;
+                                let mut dt =
+                                    smithay::backend::renderer::damage::OutputDamageTracker::new(
+                                        output_logical_size(&output).to_physical(1),
+                                        output.current_scale().fractional_scale(),
+                                        output.current_transform(),
                                     );
-                                    if is_screen {
-                                        data.screenshot_ui.select_all();
-                                        data.pending_screenshot_confirm = Some(true);
-                                    }
-                                }
+                                dt.render_output(
+                                    renderer,
+                                    &mut fb,
+                                    0,
+                                    &all_elements,
+                                    [0.0, 0.0, 0.0, 1.0],
+                                )
+                                .ok()?;
+                                Some(tex_clone)
+                            })();
+
+                        // WITHOUT cursor
+                        let tex_without =
+                            (|| -> Option<smithay::backend::renderer::gles::GlesTexture> {
+                                let mut texture = Offscreen::<
+                                    smithay::backend::renderer::gles::GlesTexture,
+                                >::create_buffer(
+                                    renderer,
+                                    smithay::backend::allocator::Fourcc::Abgr8888,
+                                    buf_size,
+                                )
+                                .ok()?;
+                                let tex_clone = texture.clone();
+                                let mut fb = renderer.bind(&mut texture).ok()?;
+                                let mut dt =
+                                    smithay::backend::renderer::damage::OutputDamageTracker::new(
+                                        output_logical_size(&output).to_physical(1),
+                                        output.current_scale().fractional_scale(),
+                                        output.current_transform(),
+                                    );
+                                let no_cursor =
+                                    crate::render::compose_frame(data, renderer, &output, vec![]);
+                                dt.render_output(
+                                    renderer,
+                                    &mut fb,
+                                    0,
+                                    &no_cursor,
+                                    [0.0, 0.0, 0.0, 1.0],
+                                )
+                                .ok()?;
+                                Some(tex_clone)
+                            })();
+
+                        if let (Some(tw), Some(two)) = (tex_with, tex_without) {
+                            let default_output = data
+                                .focused_output
+                                .clone()
+                                .unwrap_or_else(|| output.clone());
+                            #[allow(clippy::mutable_key_type)]
+                            let mut screenshots = std::collections::HashMap::new();
+                            screenshots.insert(output.clone(), (tw, two));
+                            data.screenshot_ui.open(
+                                renderer,
+                                screenshots,
+                                default_output,
+                                false,
+                            );
+                            if is_screen {
+                                data.screenshot_ui.select_all();
+                                data.pending_screenshot_confirm = Some(true);
                             }
                         }
                     }
@@ -290,6 +333,7 @@ pub fn init_winit(
                         if let Ok((size, pixels)) = data.screenshot_ui.capture(renderer) {
                             data.save_screenshot(size, &pixels, write_to_disk);
                         }
+                        data.restore_pointer_to_canvas();
                         data.screenshot_ui.close();
                     }
 

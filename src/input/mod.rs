@@ -584,10 +584,16 @@ impl Srwm {
             let pointer = self.pointer();
             let old_pos = pointer.current_location();
             let delta = event.delta();
-            let new_pos: Point<f64, smithay::utils::Logical> =
+            let mut new_pos: Point<f64, smithay::utils::Logical> =
                 (old_pos.x + delta.x, old_pos.y + delta.y).into();
 
             if let Some(output) = self.active_output() {
+                // Clamp to output bounds (pointer is in screen-space)
+                let out_size = crate::state::output_logical_size(&output);
+                new_pos = Point::from((
+                    new_pos.x.clamp(0.0, out_size.w as f64 - 1.0),
+                    new_pos.y.clamp(0.0, out_size.h as f64 - 1.0),
+                ));
                 let scale = output.current_scale().fractional_scale();
                 let pt: smithay::utils::Point<i32, smithay::utils::Physical> =
                     Point::from(((new_pos.x * scale) as i32, (new_pos.y * scale) as i32));

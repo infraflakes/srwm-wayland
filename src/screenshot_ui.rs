@@ -36,13 +36,13 @@ pub enum ScreenshotUi {
 
 pub struct OutputData {
     pub size: Size<i32, Physical>,
-    /// The raw texture, needed by `capture()` via `ExportMem::copy_texture`.
-    pub raw_texture: GlesTexture,
-    /// A `TextureBuffer` wrapping the same texture, used for rendering via
-    /// `TextureRenderElement::from_texture_buffer`.
-    pub texture_buffer: TextureBuffer<GlesTexture>,
-    /// [0..3] = white selection border (top, bottom, left, right)
-    /// [4..7] = semi-transparent dim (above, below, left-of, right-of)
+    /// Frozen screenshot WITH cursor baked in.  
+    pub texture_with_pointer: GlesTexture,
+    pub buffer_with_pointer: TextureBuffer<GlesTexture>,
+    /// Frozen screenshot WITHOUT cursor.  
+    pub texture_without_pointer: GlesTexture,
+    pub buffer_without_pointer: TextureBuffer<GlesTexture>,
+    /// [0..3] = white selection border, [4..7] = dim overlay  
     pub rects: [(Rectangle<i32, Physical>, [f32; 4]); 8],
 }
 
@@ -74,7 +74,7 @@ impl ScreenshotUi {
     pub fn open(
         &mut self,
         renderer: &GlesRenderer,
-        screenshots: HashMap<Output, GlesTexture>,
+        screenshots: HashMap<Output, (GlesTexture, GlesTexture)>, // (with_pointer, without_pointer)
         default_output: Output,
         show_pointer: bool,
     ) -> bool {
@@ -86,7 +86,6 @@ impl ScreenshotUi {
             return false;
         };
 
-        // Restore previous selection if the output is still present.
         let prev = last_selection
             .take()
             .and_then(|(weak, sel)| weak.upgrade().map(|o| (o, sel)));
@@ -118,25 +117,35 @@ impl ScreenshotUi {
         #[allow(clippy::mutable_key_type)]
         let output_data: HashMap<_, _> = screenshots
             .into_iter()
-            .filter_map(|(output, texture)| {
+            .filter_map(|(output, (tex_with, tex_without))| {
                 let mode = output.current_mode()?;
-                let _transform = output.current_transform();
-                let size = _transform.transform_size(mode.size);
-                let _scale = output.current_scale().fractional_scale();
-                let tb = TextureBuffer::from_texture(
+                let transform = output.current_transform();
+                let size = transform.transform_size(mode.size);
+                let buf_with = TextureBuffer::from_texture(
                     renderer,
-                    texture.clone(),
+                    tex_with.clone(),
                     1,
                     Transform::Normal,
                     None,
                 );
-                let data = OutputData {
-                    size,
-                    raw_texture: texture,
-                    texture_buffer: tb,
-                    rects: Default::default(),
-                };
-                Some((output, data))
+                let buf_without = TextureBuffer::from_texture(
+                    renderer,
+                    tex_without.clone(),
+                    1,
+                    Transform::Normal,
+                    None,
+                );
+                Some((
+                    output,
+                    OutputData {
+                        size,
+                        texture_with_pointer: tex_with,
+                        buffer_with_pointer: buf_with,
+                        texture_without_pointer: tex_without,
+                        buffer_without_pointer: buf_without,
+                        rects: Default::default(),
+                    },
+                ))
             })
             .collect();
 
@@ -365,7 +374,12 @@ impl ScreenshotUi {
         renderer: &mut GlesRenderer,
         output: &Output,
     ) -> Vec<OutputRenderElements> {
-        let Self::Open { output_data, .. } = self else {
+        let Self::Open {
+            output_data,
+            show_pointer,
+            ..
+        } = self
+        else {
             return vec![];
         };
         let Some(data) = output_data.get(output) else {
@@ -384,10 +398,15 @@ impl ScreenshotUi {
             }
         }
 
-        // Frozen screenshot underneath.
+        // Frozen screenshot underneath — pick texture based on show_pointer.
+        let buffer = if *show_pointer {
+            &data.buffer_with_pointer
+        } else {
+            &data.buffer_without_pointer
+        };
         let tex_elem = TextureRenderElement::from_texture_buffer(
             Point::from((0.0, 0.0)),
-            &data.texture_buffer,
+            buffer,
             None,
             None,
             None,
@@ -408,6 +427,7 @@ impl ScreenshotUi {
         let Self::Open {
             selection,
             output_data,
+            show_pointer,
             ..
         } = self
         else {
@@ -423,7 +443,12 @@ impl ScreenshotUi {
             .to_logical(1)
             .to_buffer(1, Transform::Normal, &data.size.to_logical(1));
 
-        let mapping = renderer.copy_texture(&data.raw_texture, buf_rect, Fourcc::Abgr8888)?;
+        let texture = if *show_pointer {
+            &data.texture_with_pointer
+        } else {
+            &data.texture_without_pointer
+        };
+        let mapping = renderer.copy_texture(texture, buf_rect, Fourcc::Abgr8888)?;
         let copy = renderer.map_texture(&mapping)?;
 
         Ok((rect.size, copy.to_vec()))

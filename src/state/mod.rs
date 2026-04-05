@@ -1439,6 +1439,25 @@ impl Srwm {
             }
         }
     }
+    pub fn restore_pointer_to_canvas(&mut self) {
+        let pointer = self.pointer();
+        let screen_pos = pointer.current_location();
+        let Some((camera, zoom)) = self.with_output_state(|os| (os.camera, os.zoom)) else {
+            return;
+        };
+        let canvas_pos =
+            srwm::canvas::screen_to_canvas(srwm::canvas::ScreenPos(screen_pos), camera, zoom).0;
+        pointer.motion(
+            self,
+            None,
+            &smithay::input::pointer::MotionEvent {
+                location: canvas_pos,
+                serial: smithay::utils::SERIAL_COUNTER.next_serial(),
+                time: 0,
+            },
+        );
+        pointer.frame(self);
+    }
 }
 
 #[cfg(test)]

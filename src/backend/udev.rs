@@ -1,9 +1,6 @@
 use smithay::backend::drm::exporter::gbm::NodeFilter;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::rc::Rc;
-
+use smithay::backend::renderer::gles::GlesTexture;
+use smithay::utils::Point;
 use smithay::{
     backend::{
         allocator::{
@@ -31,6 +28,10 @@ use smithay::{
     utils::{DeviceFd, Transform},
     wayland::dmabuf::DmabufFeedbackBuilder,
 };
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::rc::Rc;
 
 use smithay_drm_extras::drm_scanner::{DrmScanEvent, DrmScanner};
 
@@ -1023,8 +1024,13 @@ fn render_frame(
     } else {
         data.config.inactive_cursor_opacity as f32
     };
+    let (cursor_cam, cursor_zoom) = if data.screenshot_ui.is_open() {
+        (Point::from((0.0, 0.0)), 1.0)
+    } else {
+        (cur_camera, cur_zoom)
+    };
     let cursor_elements =
-        crate::render::build_cursor_elements(data, renderer, cur_camera, cur_zoom, cursor_alpha);
+        crate::render::build_cursor_elements(data, renderer, cursor_cam, cursor_zoom, cursor_alpha);
     let renderer = backend.renderer();
     let elements = crate::render::compose_frame(data, renderer, output, cursor_elements);
 
@@ -1054,43 +1060,102 @@ fn render_frame(
         data.pending_screenshot_screen = false;
 
         use smithay::backend::renderer::{Bind, Offscreen};
-        if let Ok(mut texture) =
-            Offscreen::<smithay::backend::renderer::gles::GlesTexture>::create_buffer(
-                renderer,
-                smithay::backend::allocator::Fourcc::Abgr8888,
-                output_logical_size(output).to_buffer(1, smithay::utils::Transform::Normal),
-            )
-        {
-            let texture_for_map = texture.clone();
-            if let Ok(mut offscreen_fb) = renderer.bind(&mut texture) {
-                let physical_size = output_logical_size(output).to_physical(1);
-                let mut dt = smithay::backend::renderer::damage::OutputDamageTracker::new(
-                    physical_size,
-                    output.current_scale().fractional_scale(),
-                    output.current_transform(),
-                );
-                let res = dt.render_output(
+        let buf_size = output_logical_size(output).to_buffer(1, smithay::utils::Transform::Normal);
+
+        // Render WITH cursor (elements already includes cursor)
+        let tex_with = (|| -> Option<GlesTexture> {
+            let mut texture =
+                Offscreen::<smithay::backend::renderer::gles::GlesTexture>::create_buffer(
                     renderer,
-                    &mut offscreen_fb,
-                    0,
-                    &elements,
-                    [0.0f32, 0.0, 0.0, 1.0],
+                    smithay::backend::allocator::Fourcc::Abgr8888,
+                    buf_size,
+                )
+                .ok()?;
+            let tex_clone = texture.clone();
+            let mut fb = renderer.bind(&mut texture).ok()?;
+            let physical_size = output_logical_size(output).to_physical(1);
+            let mut dt = smithay::backend::renderer::damage::OutputDamageTracker::new(
+                physical_size,
+                output.current_scale().fractional_scale(),
+                output.current_transform(),
+            );
+            dt.render_output(renderer, &mut fb, 0, &elements, [0.0, 0.0, 0.0, 1.0])
+                .ok()?;
+            Some(tex_clone)
+        })();
+
+        // Render WITHOUT cursor — rebuild elements without cursor_elements
+        let tex_without = (|| -> Option<GlesTexture> {
+            let mut texture =
+                Offscreen::<smithay::backend::renderer::gles::GlesTexture>::create_buffer(
+                    renderer,
+                    smithay::backend::allocator::Fourcc::Abgr8888,
+                    buf_size,
+                )
+                .ok()?;
+            let tex_clone = texture.clone();
+            let mut fb = renderer.bind(&mut texture).ok()?;
+            let physical_size = output_logical_size(output).to_physical(1);
+            let mut dt = smithay::backend::renderer::damage::OutputDamageTracker::new(
+                physical_size,
+                output.current_scale().fractional_scale(),
+                output.current_transform(),
+            );
+            let no_cursor_elements = crate::render::compose_frame(data, renderer, output, vec![]);
+            dt.render_output(
+                renderer,
+                &mut fb,
+                0,
+                &no_cursor_elements,
+                [0.0, 0.0, 0.0, 1.0],
+            )
+            .ok()?;
+            Some(tex_clone)
+        })();
+
+        if let (Some(tw), Some(two)) = (tex_with, tex_without) {
+            let default_output = data
+                .focused_output
+                .clone()
+                .unwrap_or_else(|| output.clone());
+            #[allow(clippy::mutable_key_type)]
+            let mut screenshots = std::collections::HashMap::new();
+            screenshots.insert(output.clone(), (tw, two));
+            data.screenshot_ui
+                .open(renderer, screenshots, default_output, false);
+            if is_screen {
+                data.screenshot_ui.select_all();
+                data.pending_screenshot_confirm = Some(true);
+            }
+            // Warp pointer from canvas-space to screen-space for screenshot interaction
+            {
+                let pointer = data.seat.get_pointer().unwrap();
+                let canvas_pos = pointer.current_location();
+                let screen_pos = data
+                    .with_output_state(|os| {
+                        srwm::canvas::canvas_to_screen(
+                            srwm::canvas::CanvasPos(canvas_pos),
+                            os.camera,
+                            os.zoom,
+                        )
+                        .0
+                    })
+                    .unwrap_or(canvas_pos);
+                let out_size = output_logical_size(output);
+                let clamped: Point<f64, smithay::utils::Logical> = Point::from((
+                    screen_pos.x.clamp(0.0, out_size.w as f64 - 1.0),
+                    screen_pos.y.clamp(0.0, out_size.h as f64 - 1.0),
+                ));
+                pointer.motion(
+                    data,
+                    None,
+                    &smithay::input::pointer::MotionEvent {
+                        location: clamped,
+                        serial: smithay::utils::SERIAL_COUNTER.next_serial(),
+                        time: 0,
+                    },
                 );
-                if res.is_ok() {
-                    let default_output = data
-                        .focused_output
-                        .clone()
-                        .unwrap_or_else(|| output.clone());
-                    #[allow(clippy::mutable_key_type)]
-                    let mut screenshots = std::collections::HashMap::new();
-                    screenshots.insert(output.clone(), texture_for_map);
-                    data.screenshot_ui
-                        .open(renderer, screenshots, default_output, !is_screen);
-                    if is_screen {
-                        data.screenshot_ui.select_all();
-                        data.pending_screenshot_confirm = Some(true);
-                    }
-                }
+                pointer.frame(data);
             }
         }
     }
@@ -1099,6 +1164,7 @@ fn render_frame(
         if let Ok((size, pixels)) = data.screenshot_ui.capture(renderer) {
             data.save_screenshot(size, &pixels, write_to_disk);
         }
+        data.restore_pointer_to_canvas();
         data.screenshot_ui.close();
     }
 
