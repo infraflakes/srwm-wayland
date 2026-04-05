@@ -2,6 +2,8 @@ pub mod mutter_screen_cast;
 pub mod mutter_service_channel;
 use zbus::blocking::Connection;
 use zbus::object_server::Interface;
+pub mod gnome_shell_introspect;
+pub mod mutter_display_config;
 
 pub use mutter_screen_cast::ScreenCast;
 

@@ -146,8 +146,61 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         data.ipc_outputs = Some(ipc_outputs.clone());
 
         // Create and start the ScreenCast D-Bus service
-        let screen_cast = dbus::ScreenCast::new(ipc_outputs, to_srwm);
+        let screen_cast = dbus::ScreenCast::new(ipc_outputs.clone(), to_srwm);
         data.conn_screen_cast = dbus::start_screen_cast(screen_cast);
+
+        // DisplayConfig — shares the same ipc_outputs Arc as ScreenCast
+        let display_config = dbus::mutter_display_config::DisplayConfig::new(ipc_outputs.clone());
+        data.conn_display_config = dbus::try_start(display_config);
+
+        // Introspect — window list for the portal picker
+        let (introspect_tx, introspect_rx) = calloop::channel::channel();
+        let (to_introspect, from_srwm) = async_channel::unbounded();
+        event_loop
+            .handle()
+            .insert_source(introspect_rx, {
+                let to_introspect = to_introspect.clone();
+                move |event, _, data: &mut Srwm| {
+                    if let calloop::channel::Event::Msg(
+                        dbus::gnome_shell_introspect::IntrospectToSrwm::GetWindows,
+                    ) = event
+                    {
+                        let mut windows = HashMap::new();
+                        // Iterate over all windows in the space
+                        use smithay::wayland::seat::WaylandFocus;
+                        for (idx, window) in data.space.elements().enumerate() {
+                            if let Some(surface) = window.wl_surface() {
+                                use smithay::wayland::shell::xdg::XdgToplevelSurfaceData;
+                                smithay::wayland::compositor::with_states(&surface, |states| {
+                                    if let Some(data) =
+                                        states.data_map.get::<XdgToplevelSurfaceData>()
+                                    {
+                                        let attrs = data.lock().unwrap();
+                                        windows.insert(
+                                            idx as u64,
+                                            dbus::gnome_shell_introspect::WindowProperties {
+                                                title: attrs.title.clone().unwrap_or_default(),
+                                                app_id: attrs
+                                                    .app_id
+                                                    .clone()
+                                                    .map(|id| format!("{id}.desktop"))
+                                                    .unwrap_or_default(),
+                                            },
+                                        );
+                                    }
+                                });
+                            }
+                        }
+                        let _ = to_introspect.send_blocking(
+                            dbus::gnome_shell_introspect::SrwmToIntrospect::Windows(windows),
+                        );
+                    }
+                }
+            })
+            .expect("failed to insert introspect source");
+
+        let introspect = dbus::gnome_shell_introspect::Introspect::new(introspect_tx, from_srwm);
+        data.conn_introspect = dbus::try_start(introspect);
     }
 
     // Register the Wayland Display as a calloop source so client messages

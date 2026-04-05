@@ -508,6 +508,8 @@ pub struct Srwm {
         Option<smithay::backend::allocator::gbm::GbmDevice<smithay::backend::drm::DrmDeviceFd>>,
     pub ipc_outputs:
         Option<Arc<Mutex<HashMap<String, crate::dbus::mutter_screen_cast::OutputInfo>>>>,
+    pub conn_display_config: Option<zbus::blocking::Connection>,
+    pub conn_introspect: Option<zbus::blocking::Connection>,
 }
 
 /// Per-client state stored by wayland-server for each connected client.
@@ -616,6 +618,8 @@ impl Srwm {
         seat.add_pointer();
         let autostart = config.autostart.clone();
         Self {
+            conn_display_config: None,
+            conn_introspect: None,
             conn_service_channel: None,
             ipc_outputs: None,
             start_time: Instant::now(),
