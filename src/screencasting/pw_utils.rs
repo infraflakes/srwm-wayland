@@ -87,12 +87,14 @@ pub enum PwToSrwm {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CastTarget {
     Output { name: String },
+    Window { id: u64 },
 }
 
 impl CastTarget {
     pub fn matches_output(&self, output: &Output) -> bool {
         match self {
             CastTarget::Output { name } => output.name() == *name,
+            CastTarget::Window { .. } => false,
         }
     }
 }

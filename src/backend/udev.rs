@@ -1211,6 +1211,9 @@ fn render_frame(
         // approximation — the frame has just been submitted to DRM.
         let target_time = crate::screencasting::pw_utils::get_monotonic_time();
         data.render_for_screen_cast(renderer, output, &elements, target_time);
+        // Also render individual window casts
+        let renderer = backend.renderer();
+        data.render_windows_for_screen_cast(renderer, output, target_time);
     }
 
     // Fulfill capture requests after main render

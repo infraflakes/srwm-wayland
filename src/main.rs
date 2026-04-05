@@ -145,6 +145,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let ipc_outputs = Arc::new(Mutex::new(HashMap::new()));
         data.ipc_outputs = Some(ipc_outputs.clone());
 
+        // Backfill outputs created during init_udev() before ipc_outputs was set.
+        for output in data.space.outputs() {
+            let mode = output.current_mode().unwrap();
+            let transform = output.current_transform();
+            let size = transform.transform_size(mode.size);
+            let pos = output.current_location();
+            ipc_outputs.lock().unwrap().insert(
+                output.name(),
+                dbus::mutter_screen_cast::OutputInfo {
+                    name: output.name(),
+                    x: pos.x,
+                    y: pos.y,
+                    width: size.w as u32,
+                    height: size.h as u32,
+                },
+            );
+        }
+
         // Create and start the ScreenCast D-Bus service
         let screen_cast = dbus::ScreenCast::new(ipc_outputs.clone(), to_srwm);
         data.conn_screen_cast = dbus::start_screen_cast(screen_cast);

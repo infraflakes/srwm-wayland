@@ -1,5 +1,6 @@
 pub mod pw_utils;
 
+use smithay::utils::Point;
 use std::collections::HashSet;
 use std::mem;
 use std::time::Duration;
@@ -132,10 +133,37 @@ impl Srwm {
                             false,
                         )
                     }
-                    StreamTargetId::Window { .. } => {
-                        tracing::warn!("window casting not yet supported");
-                        self.stop_cast(session_id);
-                        return;
+                    StreamTargetId::Window { id } => {
+                        // Find the window by its Introspect index
+                        let window = self.space.elements().nth(id as usize);
+                        let Some(window) = window else {
+                            tracing::warn!("error starting screencast: window id {id} not found");
+                            self.stop_cast(session_id);
+                            return;
+                        };
+                        let geom = window.geometry();
+                        let output_scale = self
+                            .focused_output
+                            .as_ref()
+                            .and_then(|o| {
+                                o.current_mode()
+                                    .map(|_| o.current_scale().fractional_scale())
+                            })
+                            .unwrap_or(1.0);
+                        let scale = smithay::utils::Scale::from(output_scale);
+                        let size = geom.size.to_physical_precise_round(scale);
+                        let refresh = self
+                            .focused_output
+                            .as_ref()
+                            .and_then(|o| o.current_mode())
+                            .map(|m| m.refresh as u32)
+                            .unwrap_or(60_000);
+                        (
+                            CastTarget::Window { id },
+                            size,
+                            refresh,
+                            true, // alpha for window casts
+                        )
                     }
                 };
 
@@ -223,6 +251,87 @@ impl Srwm {
             // Cursor is already embedded in the composed elements, so no separate
             // cursor metadata is needed. Pass None for cursor_data.
             if cast.dequeue_buffer_and_render(renderer, elements, &None, size, scale) {
+                cast.last_frame_time = target_presentation_time;
+            }
+        }
+        self.screencasting.as_mut().unwrap().casts = casts;
+
+        for id in casts_to_stop {
+            self.stop_cast(id);
+        }
+    }
+
+    pub fn render_windows_for_screen_cast(
+        &mut self,
+        renderer: &mut GlesRenderer,
+        output: &Output,
+        target_presentation_time: Duration,
+    ) {
+        let scale = Scale::from(output.current_scale().fractional_scale());
+        let mut casts_to_stop = vec![];
+
+        let casting = self.screencasting.as_mut().unwrap();
+        let mut casts = mem::take(&mut casting.casts);
+        for cast in &mut casts {
+            if !cast.is_active() {
+                continue;
+            }
+
+            let CastTarget::Window { id } = cast.target else {
+                continue;
+            };
+
+            // Find the window by Introspect index (same order as space.elements().enumerate())
+            let window = self.space.elements().nth(id as usize).cloned();
+            let Some(window) = window else {
+                continue;
+            };
+
+            let geom = window.geometry();
+            let size = geom.size.to_physical_precise_round(scale);
+
+            match cast.ensure_size(size) {
+                Ok(CastSizeChange::Ready) => (),
+                Ok(CastSizeChange::Pending) => continue,
+                Err(err) => {
+                    tracing::warn!("error updating stream size, stopping screencast: {err:?}");
+                    casts_to_stop.push(cast.session_id);
+                    continue;
+                }
+            }
+
+            if cast.check_time_and_schedule(output, target_presentation_time) {
+                continue;
+            }
+
+            // Render the window's surface tree at (0,0) with zoom=1.0
+            use smithay::backend::renderer::element::AsRenderElements;
+            use smithay::backend::renderer::element::surface::WaylandSurfaceRenderElement;
+            use smithay::backend::renderer::element::utils::RescaleRenderElement;
+            use smithay::wayland::seat::WaylandFocus;
+
+            let mut elements: Vec<OutputRenderElements> = Vec::new();
+            if let Some(_wl_surface) = window.wl_surface() {
+                let surface_elements = window
+                    .render_elements::<WaylandSurfaceRenderElement<GlesRenderer>>(
+                        renderer,
+                        // Offset by -geometry.loc so the window content starts at (0,0)
+                        Point::from((-geom.loc.x, -geom.loc.y)).to_physical_precise_round(scale),
+                        scale,
+                        1.0, // full opacity
+                    );
+                for elem in surface_elements {
+                    elements.push(OutputRenderElements::Window(
+                        RescaleRenderElement::from_element(
+                            elem,
+                            Point::<i32, Physical>::from((0, 0)),
+                            1.0, // no zoom for window casts
+                        ),
+                    ));
+                }
+            }
+
+            if cast.dequeue_buffer_and_render(renderer, &elements, &None, size, scale) {
                 cast.last_frame_time = target_presentation_time;
             }
         }
