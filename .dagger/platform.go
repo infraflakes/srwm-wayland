@@ -1,11 +1,11 @@
 package main
 
 import (
-	"srwm-wayland/internal/dagger"
+	"srwc/internal/dagger"
 )
 
 // base returns a container pre-configured with system dependencies for the target OS
-func (m *SrwmWayland) base(os string) *dagger.Container {
+func (m *Srwc) base(os string) *dagger.Container {
 	switch os {
 	case "arch":
 		return dag.Container().

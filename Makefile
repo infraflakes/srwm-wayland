@@ -13,7 +13,7 @@ build: clean
 	@read -p "> " OS; \
 	SELECTED_OS=$${OS:-$(DEFAULT_OS)}; \
 	echo "Building for $$SELECTED_OS..."; \
-	dagger call build --source=. --os=$$SELECTED_OS export --path=./target/release/srwm-$$SELECTED_OS
+	dagger call build --source=. --os=$$SELECTED_OS export --path=./target/release/srwc-$$SELECTED_OS
 
 build-all: clean
 	@echo "Launching parallel builds for distros"
@@ -24,7 +24,7 @@ build-verbose: clean
 	@read -p "> " OS; \
 	SELECTED_OS=$${OS:-$(DEFAULT_OS)}; \
 	echo "Building for $$SELECTED_OS..."; \
-	dagger call build --source=. --os=$$SELECTED_OS --progress=plain export --path=./target/release/srwm-$$SELECTED_OS
+	dagger call build --source=. --os=$$SELECTED_OS --progress=plain export --path=./target/release/srwc-$$SELECTED_OS
 
 build-all-verbose: clean
 	@echo "Launching parallel builds for distros"

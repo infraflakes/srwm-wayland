@@ -4,13 +4,13 @@ use smithay::input::pointer::CursorImageStatus;
 use smithay::utils::{Logical, Point};
 
 use smithay::wayland::shell::wlr_layer::Layer as WlrLayer;
-use srwm::canvas::{self, CanvasPos};
+use srwc::canvas::{self, CanvasPos};
 
 use smithay::output::Output;
 
-use super::{FocusTarget, Srwm, output_state};
+use super::{FocusTarget, Srwc, output_state};
 
-impl Srwm {
+impl Srwc {
     /// Frame-rate independent lerp factor for smooth animations.
     /// Returns how much of the remaining distance to cover this frame.
     fn animation_factor(&self, dt: Duration) -> f64 {
@@ -172,7 +172,7 @@ impl Srwm {
             .loop_handle
             .insert_source(
                 smithay::reexports::calloop::timer::Timer::from_duration(Duration::from_millis(50)),
-                |_, _, data: &mut Srwm| {
+                |_, _, data: &mut Srwc| {
                     data.launch_momentum();
                     smithay::reexports::calloop::timer::TimeoutAction::Drop
                 },

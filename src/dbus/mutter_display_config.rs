@@ -59,7 +59,7 @@ impl DisplayConfig {
 
         for output in self.ipc_outputs.lock().unwrap().values() {
             let connector = output.name.clone();
-            // srwm doesn't track make/model/serial yet, use placeholders
+            // srwc doesn't track make/model/serial yet, use placeholders
             let make = String::from("Unknown");
             let model = String::from("Unknown");
             let serial = connector.clone();

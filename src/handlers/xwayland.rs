@@ -1,4 +1,4 @@
-use crate::state::{FocusTarget, Srwm};
+use crate::state::{FocusTarget, Srwc};
 use smithay::{
     delegate_xwayland_shell,
     desktop::Window,
@@ -19,7 +19,7 @@ use smithay::{
         xwm::{Reorder, ResizeEdge, WmWindowType, X11Wm, XwmHandler, XwmId},
     },
 };
-use srwm::window_ext::WindowExt;
+use srwc::window_ext::WindowExt;
 
 use super::xdg_shell::resize_cursor;
 
@@ -36,7 +36,7 @@ fn x11_edge_to_xdg(edge: ResizeEdge) -> xdg_toplevel::ResizeEdge {
     }
 }
 
-impl XwmHandler for Srwm {
+impl XwmHandler for Srwc {
     fn xwm_state(&mut self, _xwm: XwmId) -> &mut X11Wm {
         self.xwayland.wm.as_mut().expect("X11Wm not started")
     }
@@ -82,9 +82,9 @@ impl XwmHandler for Srwm {
             let will_have_ssd = smithay_window.wants_ssd()
                 || rule
                     .as_ref()
-                    .is_some_and(|r| r.decoration == srwm::config::DecorationMode::Server);
+                    .is_some_and(|r| r.decoration == srwc::config::DecorationMode::Server);
             let bar = if will_have_ssd {
-                srwm::config::DecorationConfig::TITLE_BAR_HEIGHT as f64
+                srwc::config::DecorationConfig::TITLE_BAR_HEIGHT as f64
             } else {
                 0.0
             };
@@ -281,7 +281,7 @@ impl XwmHandler for Srwm {
             return;
         };
 
-        if srwm::config::applied_rule(&wl_surface).is_some_and(|r| r.widget) {
+        if srwc::config::applied_rule(&wl_surface).is_some_and(|r| r.widget) {
             return;
         }
 
@@ -357,7 +357,7 @@ impl XwmHandler for Srwm {
     }
 }
 
-impl XWaylandShellHandler for Srwm {
+impl XWaylandShellHandler for Srwc {
     fn xwayland_shell_state(&mut self) -> &mut XWaylandShellState {
         &mut self.xwayland.shell_state
     }
@@ -380,14 +380,14 @@ impl XWaylandShellHandler for Srwm {
         let title = surface.title();
         let rule = self.config.match_window_rule(&class, &title).cloned();
         if let Some(ref rule) = rule {
-            let applied = srwm::config::AppliedWindowRule::from(rule);
+            let applied = srwc::config::AppliedWindowRule::from(rule);
             with_states(&wl_surface, |states| {
                 states
                     .data_map
                     .insert_if_missing_threadsafe(|| std::sync::Mutex::new(applied.clone()));
                 *states
                     .data_map
-                    .get::<std::sync::Mutex<srwm::config::AppliedWindowRule>>()
+                    .get::<std::sync::Mutex<srwc::config::AppliedWindowRule>>()
                     .unwrap()
                     .lock()
                     .unwrap() = applied;
@@ -398,10 +398,10 @@ impl XWaylandShellHandler for Srwm {
         let wants_ssd = smithay_window.wants_ssd();
         let rule_forces_ssd = rule
             .as_ref()
-            .is_some_and(|r| r.decoration == srwm::config::DecorationMode::Server);
+            .is_some_and(|r| r.decoration == srwc::config::DecorationMode::Server);
         let rule_forces_none = rule
             .as_ref()
-            .is_some_and(|r| r.decoration == srwm::config::DecorationMode::None);
+            .is_some_and(|r| r.decoration == srwc::config::DecorationMode::None);
 
         if (wants_ssd || rule_forces_ssd) && !rule_forces_none {
             let geo = smithay_window.geometry();
@@ -435,15 +435,15 @@ impl XWaylandShellHandler for Srwm {
     }
 }
 
-delegate_xwayland_shell!(Srwm);
+delegate_xwayland_shell!(Srwc);
 
 use smithay::delegate_xwayland_keyboard_grab;
 use smithay::wayland::xwayland_keyboard_grab::XWaylandKeyboardGrabHandler;
 
-impl XWaylandKeyboardGrabHandler for Srwm {
+impl XWaylandKeyboardGrabHandler for Srwc {
     fn keyboard_focus_for_xsurface(&self, surface: &WlSurface) -> Option<FocusTarget> {
         self.find_x11_surface_by_wl(surface)
             .map(|_| FocusTarget(surface.clone()))
     }
 }
-delegate_xwayland_keyboard_grab!(Srwm);
+delegate_xwayland_keyboard_grab!(Srwc);

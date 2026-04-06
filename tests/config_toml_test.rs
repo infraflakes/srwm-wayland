@@ -1,6 +1,6 @@
 use smithay::backend::input::AxisSource;
 use smithay::input::keyboard::{Keysym, ModifiersState, keysyms};
-use srwm::config::{
+use srwc::config::{
     Action, BTN_RIGHT, BindingContext, Config, ContinuousAction, GestureConfigEntry,
     GestureTrigger, MouseAction,
 };

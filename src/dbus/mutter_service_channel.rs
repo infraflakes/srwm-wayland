@@ -4,7 +4,7 @@ use zbus::{fdo, interface, zvariant};
 use super::Start;
 
 pub struct ServiceChannel {
-    to_srwm: calloop::channel::Sender<UnixStream>,
+    to_srwc: calloop::channel::Sender<UnixStream>,
 }
 
 #[interface(name = "org.gnome.Mutter.ServiceChannel")]
@@ -20,8 +20,8 @@ impl ServiceChannel {
         }
 
         let (sock1, sock2) = UnixStream::pair().unwrap();
-        if let Err(err) = self.to_srwm.send(sock2) {
-            tracing::warn!("error sending service channel client to srwm: {err:?}");
+        if let Err(err) = self.to_srwc.send(sock2) {
+            tracing::warn!("error sending service channel client to srwc: {err:?}");
             return Err(fdo::Error::Failed("internal error".to_owned()));
         }
 
@@ -30,8 +30,8 @@ impl ServiceChannel {
 }
 
 impl ServiceChannel {
-    pub fn new(to_srwm: calloop::channel::Sender<UnixStream>) -> Self {
-        Self { to_srwm }
+    pub fn new(to_srwc: calloop::channel::Sender<UnixStream>) -> Self {
+        Self { to_srwc }
     }
 }
 

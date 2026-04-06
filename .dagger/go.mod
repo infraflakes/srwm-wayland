@@ -1,4 +1,4 @@
-module srwm-wayland
+module srwc
 
 go 1.26.1
 

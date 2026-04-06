@@ -5,9 +5,9 @@ use smithay::{
     wayland::{compositor::with_states, seat::WaylandFocus},
 };
 
-use super::Srwm;
-use srwm::config;
-use srwm::window_ext::WindowExt;
+use super::Srwc;
+use srwc::config;
+use srwc::window_ext::WindowExt;
 
 /// Per-window fit state stored in the surface data_map via Mutex.
 /// Some(size) = currently fit, holding the pre-fit size.
@@ -37,7 +37,7 @@ pub fn clear_fit_state(wl_surface: &WlSurface) {
     });
 }
 
-impl Srwm {
+impl Srwc {
     pub fn fit_window(&mut self, window: &Window) {
         let Some(wl_surface) = window.wl_surface() else {
             return;

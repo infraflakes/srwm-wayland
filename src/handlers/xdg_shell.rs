@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
 use crate::grabs::{MoveSurfaceGrab, ResizeState, ResizeSurfaceGrab};
-use crate::state::{FocusTarget, Srwm, output_state};
+use crate::state::{FocusTarget, Srwc, output_state};
 use smithay::{
     delegate_xdg_shell,
     desktop::{
@@ -25,9 +25,9 @@ use smithay::{
         },
     },
 };
-use srwm::window_ext::WindowExt;
+use srwc::window_ext::WindowExt;
 
-impl XdgShellHandler for Srwm {
+impl XdgShellHandler for Srwc {
     fn xdg_shell_state(&mut self) -> &mut XdgShellState {
         &mut self.xdg_shell_state
     }
@@ -224,7 +224,7 @@ impl XdgShellHandler for Srwm {
 
     fn move_request(&mut self, surface: ToplevelSurface, _seat: wl_seat::WlSeat, serial: Serial) {
         let wl_surface = surface.wl_surface().clone();
-        if srwm::config::applied_rule(&wl_surface).is_some_and(|r| r.widget) {
+        if srwc::config::applied_rule(&wl_surface).is_some_and(|r| r.widget) {
             return;
         }
         let Some(window) = self
@@ -259,7 +259,7 @@ impl XdgShellHandler for Srwm {
         edges: xdg_toplevel::ResizeEdge,
     ) {
         let wl_surface = surface.wl_surface().clone();
-        if srwm::config::applied_rule(&wl_surface).is_some_and(|r| r.widget) {
+        if srwc::config::applied_rule(&wl_surface).is_some_and(|r| r.widget) {
             return;
         }
         let Some(window) = self
@@ -318,15 +318,15 @@ impl XdgShellHandler for Srwm {
     }
 }
 
-delegate_xdg_shell!(Srwm);
+delegate_xdg_shell!(Srwc);
 
 /// Validate that the pointer has an active grab starting on the given surface.
 /// Returns the `GrabStartData` if the button click that started the grab
 /// originated on this surface (preventing a client from stealing another's grab).
 fn check_grab(
-    pointer: &smithay::input::pointer::PointerHandle<Srwm>,
+    pointer: &smithay::input::pointer::PointerHandle<Srwc>,
     surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
-) -> Option<GrabStartData<Srwm>> {
+) -> Option<GrabStartData<Srwc>> {
     let start_data = pointer.grab_start_data()?;
     let (focus, _) = start_data.focus.as_ref()?;
 
@@ -338,7 +338,7 @@ fn check_grab(
     Some(start_data)
 }
 
-impl Srwm {
+impl Srwc {
     /// Apply xdg positioner constraint adjustments so the popup stays within
     /// the output bounds. Works for both xdg-toplevel and layer-shell parents.
     pub(crate) fn unconstrain_popup(&self, popup: &PopupKind) {
@@ -387,7 +387,7 @@ impl Srwm {
             let viewport_size = output_geo.size;
             let mut target = self
                 .with_output_state(|os| {
-                    srwm::canvas::visible_canvas_rect(
+                    srwc::canvas::visible_canvas_rect(
                         os.camera.to_i32_round(),
                         viewport_size,
                         os.zoom,

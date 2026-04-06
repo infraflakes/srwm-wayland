@@ -8,9 +8,9 @@ use smithay::{
 };
 
 use crate::input::gestures::direction_from_vector;
-use crate::state::{Srwm, output_state};
-use srwm::canvas::{CanvasPos, canvas_to_screen};
-use srwm::config::Action;
+use crate::state::{Srwc, output_state};
+use srwc::canvas::{CanvasPos, canvas_to_screen};
+use srwc::config::Action;
 
 /// Squared pixel threshold before a direction is chosen (same as 4-finger swipe).
 const THRESHOLD_SQ: f64 = 16.0 * 16.0;
@@ -19,7 +19,7 @@ const THRESHOLD_SQ: f64 = 16.0 * 16.0;
 /// Uses "natural" direction: drag right → navigate right (negated screen delta,
 /// matching 4-finger swipe convention).
 pub struct NavigateGrab {
-    pub start_data: GrabStartData<Srwm>,
+    pub start_data: GrabStartData<Srwc>,
     last_screen_pos: Point<f64, Logical>,
     cumulative: Point<f64, Logical>,
     fired: bool,
@@ -29,7 +29,7 @@ pub struct NavigateGrab {
 
 impl NavigateGrab {
     pub fn new(
-        start_data: GrabStartData<Srwm>,
+        start_data: GrabStartData<Srwc>,
         screen_pos: Point<f64, Logical>,
         output: Output,
     ) -> Self {
@@ -43,12 +43,12 @@ impl NavigateGrab {
     }
 }
 
-impl PointerGrab<Srwm> for NavigateGrab {
+impl PointerGrab<Srwc> for NavigateGrab {
     fn motion(
         &mut self,
-        data: &mut Srwm,
-        handle: &mut PointerInnerHandle<'_, Srwm>,
-        _focus: Option<(<Srwm as SeatHandler>::PointerFocus, Point<f64, Logical>)>,
+        data: &mut Srwc,
+        handle: &mut PointerInnerHandle<'_, Srwc>,
+        _focus: Option<(<Srwc as SeatHandler>::PointerFocus, Point<f64, Logical>)>,
         event: &MotionEvent,
     ) {
         let (camera, zoom) = {
@@ -80,8 +80,8 @@ impl PointerGrab<Srwm> for NavigateGrab {
 
     fn button(
         &mut self,
-        data: &mut Srwm,
-        handle: &mut PointerInnerHandle<'_, Srwm>,
+        data: &mut Srwc,
+        handle: &mut PointerInnerHandle<'_, Srwc>,
         event: &ButtonEvent,
     ) {
         handle.button(data, event);
@@ -90,7 +90,7 @@ impl PointerGrab<Srwm> for NavigateGrab {
         }
     }
 
-    fn unset(&mut self, _data: &mut Srwm) {}
+    fn unset(&mut self, _data: &mut Srwc) {}
 
     crate::grabs::forward_pointer_grab_methods!();
 }

@@ -1,7 +1,7 @@
-# srwm configuration
-# Copy to ~/.config/srwm/config.toml and uncomment what you want to change.
+# srwc configuration
+# Copy to ~/.config/srwc/config.toml and uncomment what you want to change.
 # Missing fields use built-in defaults. Invalid entries are logged and skipped.
-# Run `srwm --check-config` to validate without starting the compositor.
+# Run `srwc --check-config` to validate without starting the compositor.
 
 # Window manager modifier key: "super" (default) or "alt"
 # mod_key = "super"
@@ -92,8 +92,8 @@
 
 [background]
 # Examples:
-# # shader_path = "~/.config/srwm/bg.glsl"   # custom GLSL fragment shader
-# # tile_path = "~/.config/srwm/tile.png"     # tiled image (mutually exclusive with shader)
+# # shader_path = "~/.config/srwc/bg.glsl"   # custom GLSL fragment shader
+# # tile_path = "~/.config/srwc/tile.png"     # tiled image (mutually exclusive with shader)
 
 # Keyboard bindings: "Modifier+...+Keysym" = "action [arg]"
 # Merges with defaults. Use "none" to unbind a default binding.
@@ -249,7 +249,7 @@
 # "mod+3-finger-hold" = "center-window"
 
 # Per-output configuration. Each [[outputs]] entry matches by connector name.
-# Find connector names with wlr-randr or check srwm logs at startup.
+# Find connector names with wlr-randr or check srwc logs at startup.
 # Outputs without a matching entry default to scale 1.0.
 # Winit backend ignores [[outputs]] entries.
 #
@@ -268,7 +268,7 @@
 
 # Window rules: match windows by app_id and/or title and apply overrides.
 # At least one of app_id or title is required. Both support * glob.
-# To find an app's app_id: cat $XDG_RUNTIME_DIR/srwm/state (see "windows=" line)
+# To find an app's app_id: cat $XDG_RUNTIME_DIR/srwc/state (see "windows=" line)
 #
 # Fields:
 #   app_id     — app_id to match (optional, supports * glob)

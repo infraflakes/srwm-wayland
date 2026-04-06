@@ -37,8 +37,8 @@ use smithay_drm_extras::drm_scanner::{DrmScanEvent, DrmScanner};
 
 use crate::backend::Backend;
 use crate::render::OutputRenderElements;
-use crate::state::{Srwm, init_output_state, output_logical_size};
-use srwm::config::{OutputMode as ConfigOutputMode, OutputPosition};
+use crate::state::{Srwc, init_output_state, output_logical_size};
+use srwc::config::{OutputMode as ConfigOutputMode, OutputPosition};
 
 const SUPPORTED_COLOR_FORMATS: &[Fourcc] = &[
     Fourcc::Xrgb8888,
@@ -73,7 +73,7 @@ struct SurfaceData {
 pub(crate) struct UdevDevice(Rc<RefCell<DeviceData>>);
 
 /// Tick animations once for all outputs, mark dirty CRTCs, then render.
-pub(crate) fn render_if_needed(device: &UdevDevice, data: &mut Srwm) {
+pub(crate) fn render_if_needed(device: &UdevDevice, data: &mut Srwc) {
     // Fast path: nothing needs attention — skip all work when idle
     if data.drm.redraws_needed.is_empty()
         && !data.has_active_animations()
@@ -95,7 +95,7 @@ pub(crate) fn render_if_needed(device: &UdevDevice, data: &mut Srwm) {
     }
 
     // 3. Global animations (key repeat, cursor) → mark all dirty
-    // mark_all_dirty() uses active_crtcs on Srwm, not dev.surfaces
+    // mark_all_dirty() uses active_crtcs on Srwc, not dev.surfaces
     if data.held_action.is_some()
         || data.cursor.exec_cursor_show_at.is_some()
         || data.cursor.exec_cursor_deadline.is_some()
@@ -111,7 +111,7 @@ pub(crate) fn render_if_needed(device: &UdevDevice, data: &mut Srwm) {
     if data.output_config_dirty {
         data.output_config_dirty = false;
         let head_state = collect_output_state_from_surfaces(&dev.surfaces, &dev.drm);
-        srwm::protocols::output_management::notify_changes::<Srwm>(
+        srwc::protocols::output_management::notify_changes::<Srwc>(
             &mut data.output_management_state,
             head_state,
         );
@@ -126,8 +126,8 @@ pub(crate) fn render_if_needed(device: &UdevDevice, data: &mut Srwm) {
 }
 
 pub fn init_udev(
-    event_loop: &mut EventLoop<'static, Srwm>,
-    data: &mut Srwm,
+    event_loop: &mut EventLoop<'static, Srwc>,
+    data: &mut Srwc,
 ) -> Result<UdevDevice, Box<dyn std::error::Error>> {
     // 1. Create libseat session
     let (mut session, session_notifier) = LibSeatSession::new()
@@ -290,7 +290,7 @@ pub fn init_udev(
         .expect("failed to build dmabuf feedback");
     let dmabuf_global = data
         .dmabuf_state
-        .create_global_with_default_feedback::<Srwm>(&data.display_handle, &default_feedback);
+        .create_global_with_default_feedback::<Srwc>(&data.display_handle, &default_feedback);
     data.dmabuf_global = Some(dmabuf_global);
 
     // 5. Set up libinput
@@ -402,7 +402,7 @@ pub fn init_udev(
     let device_for_drm = Rc::clone(&device);
     event_loop
         .handle()
-        .insert_source(drm_notifier, move |event, _meta, data: &mut Srwm| {
+        .insert_source(drm_notifier, move |event, _meta, data: &mut Srwc| {
             let mut dev = device_for_drm.borrow_mut();
             match event {
                 DrmEvent::VBlank(crtc) => {
@@ -427,7 +427,7 @@ pub fn init_udev(
     let device_for_session = Rc::clone(&device);
     event_loop
         .handle()
-        .insert_source(session_notifier, move |event, _, data: &mut Srwm| {
+        .insert_source(session_notifier, move |event, _, data: &mut Srwc| {
             let mut dev = device_for_session.borrow_mut();
             match event {
                 SessionEvent::PauseSession => {
@@ -461,7 +461,7 @@ pub fn init_udev(
     let device_for_hotplug = Rc::clone(&device);
     let udev_dispatcher = Dispatcher::new(
         udev_backend,
-        move |event: UdevEvent, _, data: &mut Srwm| {
+        move |event: UdevEvent, _, data: &mut Srwc| {
             let mut dev = device_for_hotplug.borrow_mut();
             match event {
                 UdevEvent::Changed { device_id } => {
@@ -523,7 +523,7 @@ pub fn init_udev(
                                         data.drm.active_crtcs.insert(crtc);
                                         let surface = surfaces.get_mut(&crtc).unwrap();
                                         // Notify existing toplevels about the new output
-                                        srwm::protocols::foreign_toplevel::send_output_enter_all(
+                                        srwc::protocols::foreign_toplevel::send_output_enter_all(
                                             &mut data.foreign_toplevel_state,
                                             &surface.output,
                                         );
@@ -547,7 +547,7 @@ pub fn init_udev(
                                                 .unwrap()
                                                 .remove(&surface.output.name());
                                         }
-                                        srwm::protocols::foreign_toplevel::send_output_leave_all(
+                                        srwc::protocols::foreign_toplevel::send_output_leave_all(
                                             &mut data.foreign_toplevel_state,
                                             &surface.output,
                                         );
@@ -649,7 +649,7 @@ pub fn init_udev(
                     }
                     // Notify output management clients after hotplug changes
                     let head_state = collect_output_state_from_surfaces(surfaces, drm);
-                    srwm::protocols::output_management::notify_changes::<Srwm>(
+                    srwc::protocols::output_management::notify_changes::<Srwc>(
                         &mut data.output_management_state,
                         head_state,
                     );
@@ -674,7 +674,7 @@ pub fn init_udev(
         }
         // 13. Notify output management clients of initial state
         let head_state = collect_output_state_from_surfaces(&dev.surfaces, &dev.drm);
-        srwm::protocols::output_management::notify_changes::<Srwm>(
+        srwc::protocols::output_management::notify_changes::<Srwc>(
             &mut data.output_management_state,
             head_state,
         );
@@ -778,7 +778,7 @@ fn create_surface(
     connector: &connector::Info,
     crtc: crtc::Handle,
     dh: &smithay::reexports::wayland_server::DisplayHandle,
-    state: &mut Srwm,
+    state: &mut Srwc,
 ) -> Option<SurfaceData> {
     let connector_name = format!(
         "{}-{}",
@@ -870,7 +870,7 @@ fn create_surface(
         Some(layout_position),
     );
     output.set_preferred(output_mode);
-    output.create_global::<Srwm>(dh);
+    output.create_global::<Srwc>(dh);
     if let Some(ref ipc_outputs) = state.ipc_outputs {
         let transform = output.current_transform();
         let transformed_size = transform.transform_size(output_mode.size);
@@ -907,7 +907,7 @@ fn create_surface(
             // Retry with Modifier::Invalid (implicit) only, which is the most
             // compatible option (lets the driver pick the layout).
             tracing::warn!("DrmCompositor failed ({e:?}), retrying with implicit modifier");
-            let _ = std::fs::write("/tmp/srwm-drm-error.txt", format!("{e:?}"));
+            let _ = std::fs::write("/tmp/srwc-drm-error.txt", format!("{e:?}"));
 
             let fallback_surface = match drm.create_surface(crtc, mode, &[connector.handle()]) {
                 Ok(s) => s,
@@ -937,7 +937,7 @@ fn create_surface(
                 Err(e2) => {
                     tracing::error!("DrmCompositor failed even with implicit modifier: {e2:?}");
                     let _ = std::fs::write(
-                        "/tmp/srwm-drm-error.txt",
+                        "/tmp/srwc-drm-error.txt",
                         format!("First: {e:?}\nFallback: {e2:?}"),
                     );
                     return None;
@@ -1008,7 +1008,7 @@ fn create_surface(
 
 /// Render a single frame and queue it to the DRM compositor.
 fn render_frame(
-    data: &mut Srwm,
+    data: &mut Srwc,
     compositor: &mut GbmDrmCompositor,
     output: &Output,
     crtc: crtc::Handle,
@@ -1165,8 +1165,8 @@ fn render_frame(
                 let canvas_pos = pointer.current_location();
                 let screen_pos = data
                     .with_output_state(|os| {
-                        srwm::canvas::canvas_to_screen(
-                            srwm::canvas::CanvasPos(canvas_pos),
+                        srwc::canvas::canvas_to_screen(
+                            srwc::canvas::CanvasPos(canvas_pos),
                             os.camera,
                             os.zoom,
                         )
@@ -1238,7 +1238,7 @@ fn render_frame(
     data.display_handle.flush_clients().ok();
 }
 
-use srwm::protocols::output_management::{ModeInfo, OutputHeadState};
+use srwc::protocols::output_management::{ModeInfo, OutputHeadState};
 
 fn collect_output_state_from_surfaces(
     surfaces: &HashMap<crtc::Handle, SurfaceData>,

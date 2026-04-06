@@ -3,14 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"srwm-wayland/internal/dagger"
+	"srwc/internal/dagger"
 )
 
-type SrwmWayland struct{}
+type Srwc struct{}
 
 // Build compiles the binary for a specific OS.
 // Usage: dagger call build --source=. --os=arch
-func (m *SrwmWayland) Build(
+func (m *Srwc) Build(
 	ctx context.Context,
 	source *dagger.Directory,
 	// +optional
@@ -22,12 +22,12 @@ func (m *SrwmWayland) Build(
 		WithDirectory("/src", source.WithoutDirectory("target")).
 		WithWorkdir("/src").
 		WithExec([]string{"cargo", "build", "--release"}).
-		File("target/release/srwm")
+		File("target/release/srwc")
 }
 
 // BuildAll compiles the binary for all supported distros in parallel
 // and returns a directory containing all of them.
-func (m *SrwmWayland) BuildAll(ctx context.Context, source *dagger.Directory) *dagger.Directory {
+func (m *Srwc) BuildAll(ctx context.Context, source *dagger.Directory) *dagger.Directory {
 	platforms := []string{"debian", "arch", "fedora"}
 
 	// Start with an empty directory
@@ -39,7 +39,7 @@ func (m *SrwmWayland) BuildAll(ctx context.Context, source *dagger.Directory) *d
 		binary := m.Build(ctx, source, p)
 
 		// Add each binary to our export directory with a unique name
-		exports = exports.WithFile(fmt.Sprintf("srwm-%s", p), binary)
+		exports = exports.WithFile(fmt.Sprintf("srwc-%s", p), binary)
 	}
 
 	return exports

@@ -2,11 +2,11 @@ use smithay::{
     desktop::Window, reexports::wayland_server::protocol::wl_surface::WlSurface, utils::Point,
     wayland::seat::WaylandFocus,
 };
-use srwm::window_ext::WindowExt;
+use srwc::window_ext::WindowExt;
 
-use super::Srwm;
+use super::Srwc;
 
-impl Srwm {
+impl Srwc {
     /// Navigate the viewport to center on a window: raise, focus, animate camera.
     /// When `reset_zoom` is true, zoom animates to 1.0 (intentional navigation).
     /// Otherwise preserves current zoom, or restores saved zoom if leaving overview.
@@ -32,7 +32,7 @@ impl Srwm {
         let bar = self.window_ssd_bar(window);
         let vc = self.usable_center_screen();
         let target =
-            srwm::canvas::camera_to_center_window(window_loc, window_size, vc, target_zoom, bar);
+            srwc::canvas::camera_to_center_window(window_loc, window_size, vc, target_zoom, bar);
 
         let window_center = self.window_visual_center(window).unwrap_or_else(|| {
             Point::from((
@@ -52,12 +52,12 @@ impl Srwm {
     /// Allows zooming out far enough to see all windows.
     pub fn min_zoom(&self) -> f64 {
         let viewport = self.get_usable_area().size;
-        srwm::canvas::dynamic_min_zoom(
+        srwc::canvas::dynamic_min_zoom(
             self.space
                 .elements()
                 .filter(|w| {
                     !w.wl_surface()
-                        .and_then(|s| srwm::config::applied_rule(&s))
+                        .and_then(|s| srwc::config::applied_rule(&s))
                         .is_some_and(|r| r.widget)
                 })
                 .map(|w| {
@@ -74,7 +74,7 @@ impl Srwm {
     /// Should NOT be called during Alt-Tab cycling (history is frozen).
     /// Skips windows with `skip_taskbar` rule.
     pub fn update_focus_history(&mut self, surface: &WlSurface) {
-        if srwm::config::applied_rule(surface).is_some_and(|r| r.widget) {
+        if srwc::config::applied_rule(surface).is_some_and(|r| r.widget) {
             return;
         }
         let window = self

@@ -4,16 +4,16 @@ use smithay::{
     wayland::seat::WaylandFocus,
 };
 
-use super::{FocusTarget, FullscreenState, Srwm};
-use srwm::window_ext::WindowExt;
+use super::{FocusTarget, FullscreenState, Srwc};
+use srwc::window_ext::WindowExt;
 
-impl Srwm {
+impl Srwc {
     /// Enter fullscreen for the given window: lock viewport, expand window to fill screen.
     pub fn enter_fullscreen(&mut self, window: &Window) {
         if window
             .wl_surface()
             .as_ref()
-            .and_then(|s| srwm::config::applied_rule(s))
+            .and_then(|s| srwc::config::applied_rule(s))
             .is_some_and(|r| r.widget)
         {
             return;

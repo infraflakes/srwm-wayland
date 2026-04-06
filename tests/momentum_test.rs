@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use smithay::utils::Point;
-use srwm::canvas::MomentumState;
+use srwc::canvas::MomentumState;
 
 #[test]
 fn new_state_is_not_coasting() {

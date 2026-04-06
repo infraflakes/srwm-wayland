@@ -21,9 +21,9 @@ use smithay::{
 
 use super::pointer::{edges_from_position, resize_cursor};
 use crate::grabs::{MoveSurfaceGrab, ResizeState, compute_resize, send_resize_configure};
-use crate::state::{FocusTarget, Srwm};
-use srwm::canvas::{self, CanvasPos, canvas_to_screen};
-use srwm::config::{
+use crate::state::{FocusTarget, Srwc};
+use srwc::canvas::{self, CanvasPos, canvas_to_screen};
+use srwc::config::{
     Action, BindingContext, ContinuousAction, Direction, GestureConfigEntry, GestureTrigger,
     ThresholdAction,
 };
@@ -75,9 +75,9 @@ pub(crate) const DOUBLE_TAP_WINDOW_MS: u64 = 300;
 
 fn set_accel_profile(
     device: &mut smithay::reexports::input::Device,
-    profile: srwm::config::AccelProfile,
+    profile: srwc::config::AccelProfile,
 ) {
-    use srwm::config::AccelProfile;
+    use srwc::config::AccelProfile;
     let libinput_profile = match profile {
         AccelProfile::Flat => smithay::reexports::input::AccelProfile::Flat,
         AccelProfile::Adaptive => smithay::reexports::input::AccelProfile::Adaptive,
@@ -87,7 +87,7 @@ fn set_accel_profile(
     }
 }
 
-impl Srwm {
+impl Srwc {
     // ── Swipe ──────────────────────────────────────────────────────────
 
     fn exit_fullscreen_for_gesture(&mut self) {
@@ -135,7 +135,7 @@ impl Srwm {
                         if let Some((window, _)) = self.window_under(pos).filter(|(w, _)| {
                             !w.wl_surface()
                                 .as_ref()
-                                .and_then(|s| srwm::config::applied_rule(s))
+                                .and_then(|s| srwc::config::applied_rule(s))
                                 .is_some_and(|r| r.widget)
                         }) {
                             return self.start_gesture_resize(window, pos);
@@ -179,7 +179,7 @@ impl Srwm {
                         if let Some((window, _)) = self.window_under(pos).filter(|(w, _)| {
                             !w.wl_surface()
                                 .as_ref()
-                                .and_then(|s| srwm::config::applied_rule(s))
+                                .and_then(|s| srwc::config::applied_rule(s))
                                 .is_some_and(|r| r.widget)
                         }) {
                             return self.start_gesture_resize(window, pos);
@@ -824,7 +824,7 @@ impl Srwm {
         if window
             .wl_surface()
             .as_ref()
-            .and_then(|s| srwm::config::applied_rule(s))
+            .and_then(|s| srwc::config::applied_rule(s))
             .is_some_and(|r| r.widget)
         {
             self.gestures.state = Some(GestureState::SwipePan);

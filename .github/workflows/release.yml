@@ -1,4 +1,4 @@
-name: srwm Release  
+name: srwc Release  
   
 on:  
   push:  
@@ -23,11 +23,11 @@ jobs:
       - name: Package and Checksum  
         run: |  
           cd bin  
-          for f in srwm-*; do  
-            dist="${f#srwm-}"  
-            mv "$f" "srwm-${{ github.ref_name }}-linux-amd64-${dist}"  
-            sha256sum "srwm-${{ github.ref_name }}-linux-amd64-${dist}" \  
-              > "srwm-${{ github.ref_name }}-linux-amd64-${dist}.sha256"  
+          for f in srwc-*; do  
+            dist="${f#srwc-}"  
+            mv "$f" "srwc-${{ github.ref_name }}-linux-amd64-${dist}"  
+            sha256sum "srwc-${{ github.ref_name }}-linux-amd64-${dist}" \  
+              > "srwc-${{ github.ref_name }}-linux-amd64-${dist}.sha256"  
           done  
   
       - name: Create GitHub Release  

@@ -15,7 +15,7 @@ use smithay::output::{Output, WeakOutput};
 use smithay::utils::{Physical, Point, Rectangle, Size, Transform};
 
 use crate::render::OutputRenderElements;
-use srwm::config::Action;
+use srwc::config::Action;
 
 const SELECTION_BORDER: i32 = 2;
 

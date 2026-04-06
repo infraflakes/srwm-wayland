@@ -1,13 +1,13 @@
-<h1 align="center"><img alt="srwm" src="assets/logo.jpg" width="500"></h1>
+<h1 align="center"><img alt="srwc" src="assets/logo.jpg" width="500"></h1>
 <p align="center">A trackpad-first infinite canvas Wayland compositor.</p>
 <p align="center">
-    <a href="https://github.com/malbiruk/srwm/blob/main/LICENSE"><img alt="License: GPL-3.0-or-later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue"></a>
-    <a href="https://github.com/malbiruk/srwm/releases"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/malbiruk/srwm?logo=github"></a>
+    <a href="https://github.com/malbiruk/srwc/blob/main/LICENSE"><img alt="License: GPL-3.0-or-later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue"></a>
+    <a href="https://github.com/malbiruk/srwc/releases"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/malbiruk/srwc?logo=github"></a>
 </p>
 
 https://github.com/user-attachments/assets/df24e442-6ad0-4520-9491-cb666da06d05
 
-Traditional window managers arrange windows to fit your screen. srwm flips this: windows float on an infinite 2D canvas and you move the viewport around them. Designed with laptops in mind — trackpad support keeps getting better while display size stays limited, so treating your screen as a camera onto a larger canvas makes sense. Pan, zoom, and navigate with trackpad gestures. No workspaces, no tiling — just drift.
+Traditional window managers arrange windows to fit your screen. srwc flips this: windows float on an infinite 2D canvas and you move the viewport around them. Designed with laptops in mind — trackpad support keeps getting better while display size stays limited, so treating your screen as a camera onto a larger canvas makes sense. Pan, zoom, and navigate with trackpad gestures. No workspaces, no tiling — just drift.
 
 Built on [smithay](https://github.com/Smithay/smithay). Inspired by [vxwm](https://codeberg.org/wh1tepearl/vxwm), [hevel](https://git.sr.ht/~dlm/hevel), and [niri](https://github.com/YaLTeR/niri).
 
@@ -109,8 +109,8 @@ infinitely across the canvas). Both are infinite by nature.
 
 ```toml
 [background]
-shader_path = "~/.config/srwm/bg.glsl"    # custom shader
-# tile_path = "~/.config/srwm/tile.png"   # or tiled image
+shader_path = "~/.config/srwc/bg.glsl"    # custom shader
+# tile_path = "~/.config/srwc/tile.png"   # or tiled image
 ```
 
 ### Window rules
@@ -141,7 +141,7 @@ widget = true
 decoration = "none"
 ```
 
-> **Tip:** to find a window's `app_id`, check `$XDG_RUNTIME_DIR/srwm/state` —
+> **Tip:** to find a window's `app_id`, check `$XDG_RUNTIME_DIR/srwc/state` —
 > the `windows` field lists all open windows by their app ID.
 
 Consistent rounded corners and drop shadows across all CSD and SSD windows.
@@ -191,7 +191,7 @@ window-search script that lets you search and jump to any open window.
 ### Fedora (prebuilt binary)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/malbiruk/srwm/main/install.sh | sudo sh
+curl -fsSL https://raw.githubusercontent.com/malbiruk/srwc/main/install.sh | sudo sh
 ```
 
 Installs the binary, session wrapper, desktop entry, and shader wallpapers.
@@ -201,7 +201,7 @@ anything is missing. To uninstall, run with `sudo sh -s uninstall`.
 ### Arch Linux (AUR)
 
 ```bash
-yay -S srwm
+yay -S srwc
 ```
 
 ### NixOS / Nix
@@ -220,16 +220,16 @@ cargo build
 cargo run
 ```
 
-To add srwm as a session in your NixOS config:
+To add srwc as a session in your NixOS config:
 
 ```nix
 let
-  srwm-flake = builtins.getFlake "github:malbiruk/srwm";
-  srwm = srwm-flake.packages.x86_64-linux.default;
+  srwc-flake = builtins.getFlake "github:malbiruk/srwc";
+  srwc = srwc-flake.packages.x86_64-linux.default;
 in
 {
-  services.displayManager.sessionPackages = [ srwm ];
-  environment.systemPackages = [ srwm ];
+  services.displayManager.sessionPackages = [ srwc ];
+  environment.systemPackages = [ srwc ];
 }
 ```
 
@@ -256,17 +256,17 @@ sudo pacman -S libdisplay-info libinput seatd mesa libxkbcommon
 > [rustup](https://rustup.rs/) instead of `apt install rustc`.
 
 ```bash
-git clone https://github.com/malbiruk/srwm.git
-cd srwm
+git clone https://github.com/malbiruk/srwc.git
+cd srwc
 cargo build --release
 sudo make install
 ```
 
 ### Running
 
-srwm auto-detects whether it's running nested (inside an existing Wayland
-session) or on real hardware (from a TTY). Just run `srwm`. For display
-manager integration, select "srwm" from the session menu.
+srwc auto-detects whether it's running nested (inside an existing Wayland
+session) or on real hardware (from a TTY). Just run `srwc`. For display
+manager integration, select "srwc" from the session menu.
 
 ## Quick start
 
@@ -295,16 +295,16 @@ All keybindings are configurable — see [`config.example.toml`](config.example.
 
 ## Configuration
 
-Config file: `~/.config/srwm/config.toml` (respects `XDG_CONFIG_HOME`).
+Config file: `~/.config/srwc/config.toml` (respects `XDG_CONFIG_HOME`).
 
 ```bash
-mkdir -p ~/.config/srwm
-cp /etc/srwm/config.toml ~/.config/srwm/config.toml
+mkdir -p ~/.config/srwc
+cp /etc/srwc/config.toml ~/.config/srwc/config.toml
 ```
 
 Missing file uses built-in defaults. Partial configs merge with defaults —
 only specify what you want to change. Use `"none"` to unbind a default binding.
-Validate without starting: `srwm --check-config`.
+Validate without starting: `srwc --check-config`.
 
 ```toml
 # Launch programs at startup
@@ -319,7 +319,7 @@ See [docs/DESIGN.md](docs/DESIGN.md) for the full compositor design specificatio
 
 ## Example setup
 
-srwm is just a compositor — everything else is standard Wayland tooling.
+srwc is just a compositor — everything else is standard Wayland tooling.
 Here are some tools that work well with it:
 
 | Tool                  | Purpose                                                        |
@@ -335,7 +335,7 @@ Here are some tools that work well with it:
 | wlr-randr / wdisplays | Output configuration                                           |
 | COSMIC Settings       | Wi-Fi, Bluetooth, sound (or nm-applet + blueman + pavucontrol) |
 
-The [`extras/`](extras/) directory contains a complete setup — srwm config,
+The [`extras/`](extras/) directory contains a complete setup — srwc config,
 GLSL shader wallpapers, Python widgets (clock, calendar, system stats, power
 menu), waybar with taskbar/tray, fuzzel window-search script, and window rules
 tying it all together. Use it as a starting point or steal pieces.

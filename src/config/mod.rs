@@ -123,7 +123,7 @@ impl Config {
         Ok(Self::from_raw(raw))
     }
 
-    /// Load config from `$XDG_CONFIG_HOME/srwm/config.toml` (or `~/.config/srwm/config.toml`).
+    /// Load config from `$XDG_CONFIG_HOME/srwc/config.toml` (or `~/.config/srwc/config.toml`).
     /// Missing file → all defaults. Parse failure → error log + all defaults.
     pub fn load() -> Self {
         let config_path = config_path();

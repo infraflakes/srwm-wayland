@@ -195,7 +195,7 @@ fn blur_pass(
 /// crop the window region, run Kawase blur passes, and insert the result.
 #[allow(clippy::too_many_arguments)]
 pub fn process_blur_requests(
-    state: &mut crate::state::Srwm,
+    state: &mut crate::state::Srwc,
     renderer: &mut GlesRenderer,
     output: &Output,
     output_scale: f64,
@@ -216,7 +216,7 @@ pub fn process_blur_requests(
 
     let out_buf_size = output_size.to_logical(1).to_buffer(1, Transform::Normal);
 
-    // Shared full-output FBO for behind-content rendering — cached on Srwm, reused if size matches
+    // Shared full-output FBO for behind-content rendering — cached on Srwc, reused if size matches
     let mut bg_tex = match state.render.blur_bg_fbo.take() {
         Some((tex, cached_size)) if cached_size == output_size => tex,
         _ => {

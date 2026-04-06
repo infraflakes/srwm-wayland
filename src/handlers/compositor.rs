@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use crate::grabs::{ResizeState, has_left, has_top};
 use crate::handlers::layer_shell::LayerDestroyedMarker;
-use crate::state::{ClientState, FocusTarget, Srwm};
+use crate::state::{ClientState, FocusTarget, Srwc};
 use smithay::desktop::layer_map_for_output;
 use smithay::input::pointer::CursorImageStatus;
 use smithay::utils::Rectangle;
@@ -29,9 +29,9 @@ use smithay::{
         shm::{ShmHandler, ShmState},
     },
 };
-use srwm::window_ext::WindowExt;
+use srwc::window_ext::WindowExt;
 
-impl CompositorHandler for Srwm {
+impl CompositorHandler for Srwc {
     fn compositor_state(&mut self) -> &mut CompositorState {
         &mut self.compositor_state
     }
@@ -54,7 +54,7 @@ impl CompositorHandler for Srwm {
         // (before get_layer_surface registers smithay's validation hook), it fires
         // first on every commit. For destroyed layer surfaces, it sets full anchors
         // so smithay's size validation passes on the orphaned final commit.
-        add_pre_commit_hook::<Srwm, _>(surface, |_state, _dh, surface| {
+        add_pre_commit_hook::<Srwc, _>(surface, |_state, _dh, surface| {
             with_states(surface, |states| {
                 if states
                     .data_map
@@ -121,7 +121,7 @@ impl CompositorHandler for Srwm {
         {
             let ok = self
                 .loop_handle
-                .insert_source(source, move |_, _, data: &mut Srwm| {
+                .insert_source(source, move |_, _, data: &mut Srwc| {
                     if let Some(client_state) = client.get_data::<ClientState>() {
                         let dh = data.display_handle.clone();
                         client_state.compositor_state.blocker_cleared(data, &dh);
@@ -176,7 +176,7 @@ impl CompositorHandler for Srwm {
 
         // Update renderer surface state (buffer dimensions, surface_view, textures).
         // Without this, bbox_from_surface_tree() can't see any surfaces and returns 0x0.
-        smithay::backend::renderer::utils::on_commit_buffer_handler::<Srwm>(surface);
+        smithay::backend::renderer::utils::on_commit_buffer_handler::<Srwc>(surface);
 
         // Session lock: confirm lock on first buffer commit from the lock surface
         if let crate::state::SessionLock::Pending(_) = &self.session_lock {
@@ -243,20 +243,20 @@ impl CompositorHandler for Srwm {
                     let already_applied = with_states(&root, |states| {
                         states
                             .data_map
-                            .get::<std::sync::Mutex<srwm::config::AppliedWindowRule>>()
+                            .get::<std::sync::Mutex<srwc::config::AppliedWindowRule>>()
                             .is_some()
                     });
 
                     if let Some(ref rule) = rule {
                         // Store applied rule in surface data_map
-                        let applied = srwm::config::AppliedWindowRule::from(rule);
+                        let applied = srwc::config::AppliedWindowRule::from(rule);
                         with_states(&root, |states| {
                             states.data_map.insert_if_missing_threadsafe(|| {
                                 std::sync::Mutex::new(applied.clone())
                             });
                             *states
                                 .data_map
-                                .get::<std::sync::Mutex<srwm::config::AppliedWindowRule>>()
+                                .get::<std::sync::Mutex<srwc::config::AppliedWindowRule>>()
                                 .unwrap()
                                 .lock()
                                 .unwrap() = applied;
@@ -320,7 +320,7 @@ impl CompositorHandler for Srwm {
 
                     // Decoration override: always re-apply (idempotent, needed on tray reopen)
                     if let Some(ref rule) = rule
-                        && rule.decoration != srwm::config::DecorationMode::Client
+                        && rule.decoration != srwc::config::DecorationMode::Client
                     {
                         use smithay::reexports::wayland_protocols::xdg::decoration::zv1::server::zxdg_toplevel_decoration_v1::Mode;
                         if let Some(toplevel) = window.toplevel() {
@@ -365,7 +365,7 @@ impl CompositorHandler for Srwm {
                         {
                             let is_server_side = self.pending_ssd.contains(&root.id());
                             let is_none_mode = rule.as_ref().is_some_and(|r| {
-                                r.decoration == srwm::config::DecorationMode::None
+                                r.decoration == srwc::config::DecorationMode::None
                             });
                             if is_server_side
                                 && !is_none_mode
@@ -421,7 +421,7 @@ impl CompositorHandler for Srwm {
 /// send the initial configure event so the client can start rendering.
 fn ensure_initial_configure(
     surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
-    state: &Srwm,
+    state: &Srwc,
 ) {
     if let Some(window) = state
         .space
@@ -447,7 +447,7 @@ fn ensure_initial_configure(
     }
 }
 
-impl Srwm {
+impl Srwc {
     /// Give keyboard focus to a layer surface if it doesn't already have it.
     fn focus_exclusive_layer(
         &mut self,
@@ -644,15 +644,15 @@ impl Srwm {
     }
 }
 
-impl BufferHandler for Srwm {
+impl BufferHandler for Srwc {
     fn buffer_destroyed(&mut self, _buffer: &WlBuffer) {}
 }
 
-impl ShmHandler for Srwm {
+impl ShmHandler for Srwc {
     fn shm_state(&self) -> &ShmState {
         &self.shm_state
     }
 }
 
-delegate_compositor!(Srwm);
-delegate_shm!(Srwm);
+delegate_compositor!(Srwc);
+delegate_shm!(Srwc);

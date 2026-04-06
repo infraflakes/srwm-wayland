@@ -121,7 +121,7 @@ pub enum StreamTargetId {
     Window { id: u64 },
 }
 
-pub enum ScreenCastToSrwm {
+pub enum ScreenCastToSrwc {
     StartCast {
         session_id: CastSessionId,
         stream_id: CastStreamId,
@@ -141,7 +141,7 @@ pub enum ScreenCastToSrwm {
 #[derive(Clone)]
 pub struct ScreenCast {
     ipc_outputs: IpcOutputMap,
-    to_srwm: smithay::reexports::calloop::channel::Sender<ScreenCastToSrwm>,
+    to_srwc: smithay::reexports::calloop::channel::Sender<ScreenCastToSrwc>,
     #[allow(clippy::type_complexity)]
     sessions: Arc<Mutex<Vec<(Session, InterfaceRef<Session>)>>>,
 }
@@ -163,7 +163,7 @@ impl ScreenCast {
         let path = format!("/org/gnome/Mutter/ScreenCast/Session/u{}", session_id.get());
         let path = OwnedObjectPath::try_from(path).unwrap();
 
-        let session = Session::new(session_id, self.ipc_outputs.clone(), self.to_srwm.clone());
+        let session = Session::new(session_id, self.ipc_outputs.clone(), self.to_srwc.clone());
         match server.at(&path, session.clone()).await {
             Ok(true) => {
                 let iface = server.interface(&path).await.unwrap();
@@ -194,7 +194,7 @@ impl ScreenCast {
 pub struct Session {
     id: CastSessionId,
     ipc_outputs: IpcOutputMap,
-    to_srwm: smithay::reexports::calloop::channel::Sender<ScreenCastToSrwm>,
+    to_srwc: smithay::reexports::calloop::channel::Sender<ScreenCastToSrwc>,
     #[allow(clippy::type_complexity)]
     streams: Arc<Mutex<Vec<(Stream, InterfaceRef<Stream>)>>>,
     stopped: Arc<AtomicBool>,
@@ -222,10 +222,10 @@ impl Session {
 
         Session::closed(&ctxt).await.unwrap();
 
-        if let Err(err) = self.to_srwm.send(ScreenCastToSrwm::StopCast {
+        if let Err(err) = self.to_srwc.send(ScreenCastToSrwc::StopCast {
             session_id: self.id,
         }) {
-            tracing::warn!("error sending StopCast to srwm: {err:?}");
+            tracing::warn!("error sending StopCast to srwc: {err:?}");
         }
 
         let streams = mem::take(&mut *self.streams.lock().unwrap());
@@ -267,7 +267,7 @@ impl Session {
             self.id,
             target,
             cursor_mode,
-            self.to_srwm.clone(),
+            self.to_srwc.clone(),
         );
         match server.at(&path, stream.clone()).await {
             Ok(true) => {
@@ -306,7 +306,7 @@ impl Session {
             self.id,
             target,
             cursor_mode,
-            self.to_srwm.clone(),
+            self.to_srwc.clone(),
         );
         match server.at(&path, stream.clone()).await {
             Ok(true) => {
@@ -339,7 +339,7 @@ pub struct Stream {
     target: StreamTarget,
     cursor_mode: CursorMode,
     was_started: Arc<AtomicBool>,
-    to_srwm: smithay::reexports::calloop::channel::Sender<ScreenCastToSrwm>,
+    to_srwc: smithay::reexports::calloop::channel::Sender<ScreenCastToSrwc>,
 }
 
 #[derive(Clone)]
@@ -376,11 +376,11 @@ impl Stream {
 impl ScreenCast {
     pub fn new(
         ipc_outputs: IpcOutputMap,
-        to_srwm: smithay::reexports::calloop::channel::Sender<ScreenCastToSrwm>,
+        to_srwc: smithay::reexports::calloop::channel::Sender<ScreenCastToSrwc>,
     ) -> Self {
         Self {
             ipc_outputs,
-            to_srwm,
+            to_srwc,
             sessions: Arc::new(Mutex::new(vec![])),
         }
     }
@@ -405,13 +405,13 @@ impl Session {
     pub fn new(
         id: CastSessionId,
         ipc_outputs: IpcOutputMap,
-        to_srwm: smithay::reexports::calloop::channel::Sender<ScreenCastToSrwm>,
+        to_srwc: smithay::reexports::calloop::channel::Sender<ScreenCastToSrwc>,
     ) -> Self {
         Self {
             id,
             ipc_outputs,
             streams: Arc::new(Mutex::new(vec![])),
-            to_srwm,
+            to_srwc,
             stopped: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -419,7 +419,7 @@ impl Session {
 
 impl Drop for Session {
     fn drop(&mut self) {
-        let _ = self.to_srwm.send(ScreenCastToSrwm::StopCast {
+        let _ = self.to_srwc.send(ScreenCastToSrwc::StopCast {
             session_id: self.id,
         });
     }
@@ -431,7 +431,7 @@ impl Stream {
         session_id: CastSessionId,
         target: StreamTarget,
         cursor_mode: CursorMode,
-        to_srwm: smithay::reexports::calloop::channel::Sender<ScreenCastToSrwm>,
+        to_srwc: smithay::reexports::calloop::channel::Sender<ScreenCastToSrwc>,
     ) -> Self {
         Self {
             id,
@@ -439,7 +439,7 @@ impl Stream {
             target,
             cursor_mode,
             was_started: Arc::new(AtomicBool::new(false)),
-            to_srwm,
+            to_srwc,
         }
     }
 
@@ -448,7 +448,7 @@ impl Stream {
             return;
         }
 
-        let msg = ScreenCastToSrwm::StartCast {
+        let msg = ScreenCastToSrwc::StartCast {
             session_id: self.session_id,
             stream_id: self.id,
             target: self.target.make_id(),
@@ -456,8 +456,8 @@ impl Stream {
             signal_ctx: ctxt,
         };
 
-        if let Err(err) = self.to_srwm.send(msg) {
-            tracing::warn!("error sending StartCast to srwm: {err:?}");
+        if let Err(err) = self.to_srwc.send(msg) {
+            tracing::warn!("error sending StartCast to srwc: {err:?}");
         }
     }
 }

@@ -1,6 +1,6 @@
 [Desktop Entry]
-Name=srwm
+Name=srwc
 Comment=A trackpad-first infinite canvas Wayland compositor
-Exec=srwm start
+Exec=srwc start
 Type=Application
-DesktopNames=srwm
+DesktopNames=srwc

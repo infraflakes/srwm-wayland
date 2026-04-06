@@ -8,8 +8,8 @@ use smithay::{
 };
 
 use crate::focus::FocusTarget;
-use crate::state::{Srwm, output_state};
-use srwm::canvas::{CanvasPos, canvas_to_screen};
+use crate::state::{Srwc, output_state};
+use srwc::canvas::{CanvasPos, canvas_to_screen};
 
 /// Max squared screen-pixel distance for a press-release to count as a
 /// "click" (deselect) rather than a "drag" (pan). 5px → 25.
@@ -19,7 +19,7 @@ const CLICK_THRESHOLD_SQ: f64 = 25.0;
 /// Triggered by Super+left-click or left-click on empty canvas.
 /// Accumulates momentum during drag so the viewport coasts on release.
 pub struct PanGrab {
-    pub start_data: GrabStartData<Srwm>,
+    pub start_data: GrabStartData<Srwc>,
     /// Screen-local position of the pointer last frame.
     /// Delta between consecutive screen positions drives the pan.
     pub last_screen_pos: Point<f64, Logical>,
@@ -34,12 +34,12 @@ pub struct PanGrab {
     pub output: Output,
 }
 
-impl PointerGrab<Srwm> for PanGrab {
+impl PointerGrab<Srwc> for PanGrab {
     fn motion(
         &mut self,
-        data: &mut Srwm,
-        handle: &mut PointerInnerHandle<'_, Srwm>,
-        _focus: Option<(<Srwm as SeatHandler>::PointerFocus, Point<f64, Logical>)>,
+        data: &mut Srwc,
+        handle: &mut PointerInnerHandle<'_, Srwc>,
+        _focus: Option<(<Srwc as SeatHandler>::PointerFocus, Point<f64, Logical>)>,
         event: &MotionEvent,
     ) {
         // Use pinned output's camera/zoom
@@ -78,8 +78,8 @@ impl PointerGrab<Srwm> for PanGrab {
 
     fn button(
         &mut self,
-        data: &mut Srwm,
-        handle: &mut PointerInnerHandle<'_, Srwm>,
+        data: &mut Srwc,
+        handle: &mut PointerInnerHandle<'_, Srwc>,
         event: &ButtonEvent,
     ) {
         handle.button(data, event);
@@ -99,7 +99,7 @@ impl PointerGrab<Srwm> for PanGrab {
         }
     }
 
-    fn unset(&mut self, _data: &mut Srwm) {}
+    fn unset(&mut self, _data: &mut Srwc) {}
 
     crate::grabs::forward_pointer_grab_methods!();
 }

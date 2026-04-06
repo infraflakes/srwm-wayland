@@ -81,7 +81,7 @@ impl ForeignToplevelManagerState {
 /// Call once per frame (not per-output) — windows on the infinite canvas
 /// appear on all outputs, so there's no per-output tracking.
 ///
-/// Takes split references to avoid borrow conflicts with Srwm.
+/// Takes split references to avoid borrow conflicts with Srwc.
 /// Generic over D (the compositor state type) for `create_resource` dispatch.
 pub fn refresh<D>(
     ft_state: &mut ForeignToplevelManagerState,

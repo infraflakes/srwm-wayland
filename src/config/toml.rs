@@ -209,7 +209,7 @@ pub fn config_path() -> std::path::PathBuf {
         let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
         format!("{home}/.config")
     });
-    std::path::PathBuf::from(config_dir).join("srwm/config.toml")
+    std::path::PathBuf::from(config_dir).join("srwc/config.toml")
 }
 
 pub(super) fn expand_tilde(path: &str) -> String {

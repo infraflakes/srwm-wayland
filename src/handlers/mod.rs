@@ -3,7 +3,7 @@ pub mod layer_shell;
 pub mod xdg_shell;
 pub mod xwayland;
 
-use crate::state::{FocusTarget, Srwm};
+use crate::state::{FocusTarget, Srwc};
 use smithay::input::dnd::DndGrabHandler;
 use smithay::wayland::seat::WaylandFocus;
 use smithay::wayland::shell::xdg::dialog::XdgDialogHandler;
@@ -47,9 +47,9 @@ use smithay::{
         },
     },
 };
-use srwm::window_ext::WindowExt;
+use srwc::window_ext::WindowExt;
 
-impl SeatHandler for Srwm {
+impl SeatHandler for Srwc {
     type KeyboardFocus = FocusTarget;
     type PointerFocus = FocusTarget;
     type TouchFocus = FocusTarget;
@@ -105,32 +105,32 @@ impl SeatHandler for Srwm {
     }
 }
 
-delegate_seat!(Srwm);
+delegate_seat!(Srwc);
 
-impl SelectionHandler for Srwm {
+impl SelectionHandler for Srwc {
     type SelectionUserData = ();
 }
 
-impl DataDeviceHandler for Srwm {
+impl DataDeviceHandler for Srwc {
     fn data_device_state(&mut self) -> &mut DataDeviceState {
         &mut self.data_device_state
     }
 }
 
-impl DndGrabHandler for Srwm {}
-impl WaylandDndGrabHandler for Srwm {}
+impl DndGrabHandler for Srwc {}
+impl WaylandDndGrabHandler for Srwc {}
 
-delegate_data_device!(Srwm);
+delegate_data_device!(Srwc);
 
-impl OutputHandler for Srwm {}
+impl OutputHandler for Srwc {}
 
-delegate_output!(Srwm);
+delegate_output!(Srwc);
 
-impl TabletSeatHandler for Srwm {}
+impl TabletSeatHandler for Srwc {}
 
-delegate_cursor_shape!(Srwm);
+delegate_cursor_shape!(Srwc);
 
-impl DmabufHandler for Srwm {
+impl DmabufHandler for Srwc {
     fn dmabuf_state(&mut self) -> &mut DmabufState {
         &mut self.dmabuf_state
     }
@@ -146,24 +146,24 @@ impl DmabufHandler for Srwm {
             return;
         };
         if backend.renderer().import_dmabuf(&dmabuf, None).is_ok() {
-            let _ = notifier.successful::<Srwm>();
+            let _ = notifier.successful::<Srwc>();
         } else {
             notifier.failed();
         }
     }
 }
 
-delegate_dmabuf!(Srwm);
+delegate_dmabuf!(Srwc);
 
-delegate_viewporter!(Srwm);
+delegate_viewporter!(Srwc);
 
-impl FractionalScaleHandler for Srwm {
+impl FractionalScaleHandler for Srwc {
     fn new_fractional_scale(&mut self, _surface: WlSurface) {}
 }
 
-delegate_fractional_scale!(Srwm);
+delegate_fractional_scale!(Srwc);
 
-impl XdgActivationHandler for Srwm {
+impl XdgActivationHandler for Srwc {
     fn activation_state(&mut self) -> &mut XdgActivationState {
         &mut self.xdg_activation_state
     }
@@ -214,7 +214,7 @@ impl XdgActivationHandler for Srwm {
                 let (camera, zoom) = self
                     .with_output_state(|os| (os.camera, os.zoom))
                     .unwrap_or_default();
-                srwm::canvas::visible_fraction(
+                srwc::canvas::visible_fraction(
                     loc,
                     window.geometry().size,
                     camera,
@@ -232,25 +232,25 @@ impl XdgActivationHandler for Srwm {
     }
 }
 
-delegate_xdg_activation!(Srwm);
+delegate_xdg_activation!(Srwc);
 
-impl PrimarySelectionHandler for Srwm {
+impl PrimarySelectionHandler for Srwc {
     fn primary_selection_state(&mut self) -> &mut PrimarySelectionState {
         &mut self.primary_selection_state
     }
 }
 
-delegate_primary_selection!(Srwm);
+delegate_primary_selection!(Srwc);
 
-impl DataControlHandler for Srwm {
+impl DataControlHandler for Srwc {
     fn data_control_state(&mut self) -> &mut DataControlState {
         &mut self.data_control_state
     }
 }
 
-delegate_data_control!(Srwm);
+delegate_data_control!(Srwc);
 
-impl PointerConstraintsHandler for Srwm {
+impl PointerConstraintsHandler for Srwc {
     fn new_constraint(&mut self, _surface: &WlSurface, _pointer: &PointerHandle<Self>) {
         self.maybe_activate_pointer_constraint();
     }
@@ -283,12 +283,12 @@ impl PointerConstraintsHandler for Srwm {
     }
 }
 
-delegate_pointer_constraints!(Srwm);
+delegate_pointer_constraints!(Srwc);
 
-delegate_relative_pointer!(Srwm);
-delegate_pointer_gestures!(Srwm);
+delegate_relative_pointer!(Srwc);
+delegate_pointer_gestures!(Srwc);
 
-impl KeyboardShortcutsInhibitHandler for Srwm {
+impl KeyboardShortcutsInhibitHandler for Srwc {
     fn keyboard_shortcuts_inhibit_state(
         &mut self,
     ) -> &mut smithay::wayland::keyboard_shortcuts_inhibit::KeyboardShortcutsInhibitState {
@@ -302,13 +302,13 @@ impl KeyboardShortcutsInhibitHandler for Srwm {
     fn inhibitor_destroyed(&mut self, _inhibitor: KeyboardShortcutsInhibitor) {}
 }
 
-delegate_keyboard_shortcuts_inhibit!(Srwm);
+delegate_keyboard_shortcuts_inhibit!(Srwc);
 
 use smithay::delegate_input_method_manager;
 use smithay::delegate_text_input_manager;
 use smithay::wayland::input_method::{InputMethodHandler, PopupSurface};
 
-impl InputMethodHandler for Srwm {
+impl InputMethodHandler for Srwc {
     fn new_popup(&mut self, surface: PopupSurface) {
         if let Err(err) = self
             .popups
@@ -339,49 +339,49 @@ impl InputMethodHandler for Srwm {
     }
 }
 
-delegate_text_input_manager!(Srwm);
-delegate_input_method_manager!(Srwm);
+delegate_text_input_manager!(Srwc);
+delegate_input_method_manager!(Srwc);
 use smithay::delegate_virtual_keyboard_manager;
-delegate_virtual_keyboard_manager!(Srwm);
+delegate_virtual_keyboard_manager!(Srwc);
 
-impl IdleInhibitHandler for Srwm {
+impl IdleInhibitHandler for Srwc {
     fn inhibit(&mut self, _surface: WlSurface) {}
     fn uninhibit(&mut self, _surface: WlSurface) {}
 }
 
-delegate_idle_inhibit!(Srwm);
+delegate_idle_inhibit!(Srwc);
 
 use smithay::delegate_idle_notify;
 use smithay::wayland::idle_notify::{IdleNotifierHandler, IdleNotifierState};
 
-impl IdleNotifierHandler for Srwm {
+impl IdleNotifierHandler for Srwc {
     fn idle_notifier_state(&mut self) -> &mut IdleNotifierState<Self> {
         &mut self.idle_notifier_state
     }
 }
-delegate_idle_notify!(Srwm);
+delegate_idle_notify!(Srwc);
 
-delegate_presentation!(Srwm);
-delegate_single_pixel_buffer!(Srwm);
+delegate_presentation!(Srwc);
+delegate_single_pixel_buffer!(Srwc);
 
 use smithay::delegate_xdg_foreign;
 use smithay::wayland::xdg_foreign::{XdgForeignHandler, XdgForeignState};
 
-impl XdgForeignHandler for Srwm {
+impl XdgForeignHandler for Srwc {
     fn xdg_foreign_state(&mut self) -> &mut XdgForeignState {
         &mut self.xdg_foreign_state
     }
 }
-delegate_xdg_foreign!(Srwm);
+delegate_xdg_foreign!(Srwc);
 
 use smithay::delegate_content_type;
-delegate_content_type!(Srwm);
+delegate_content_type!(Srwc);
 
 use smithay::delegate_xdg_dialog;
 
 use smithay::wayland::shell::xdg::dialog::ToplevelDialogHint;
 
-impl XdgDialogHandler for Srwm {
+impl XdgDialogHandler for Srwc {
     fn dialog_hint_changed(&mut self, toplevel: ToplevelSurface, hint: ToplevelDialogHint) {
         if hint == ToplevelDialogHint::Modal {
             let wl_surface = toplevel.wl_surface().clone();
@@ -393,13 +393,13 @@ impl XdgDialogHandler for Srwm {
         }
     }
 }
-delegate_xdg_dialog!(Srwm);
+delegate_xdg_dialog!(Srwc);
 
 use smithay::delegate_xdg_decoration;
 use smithay::wayland::shell::xdg::ToplevelSurface;
 use smithay::wayland::shell::xdg::decoration::XdgDecorationHandler;
 
-impl XdgDecorationHandler for Srwm {
+impl XdgDecorationHandler for Srwc {
     fn new_decoration(&mut self, toplevel: ToplevelSurface) {
         use smithay::reexports::wayland_protocols::xdg::decoration::zv1::server::zxdg_toplevel_decoration_v1::Mode;
         // CSD-first: tell client to draw its own decorations
@@ -419,8 +419,8 @@ impl XdgDecorationHandler for Srwm {
         let wl_surface = toplevel.wl_surface().clone();
 
         // If a window rule forces decoration mode, override the client's request
-        let effective_mode = if let Some(rule) = srwm::config::applied_rule(&wl_surface)
-            && rule.decoration != srwm::config::DecorationMode::Client
+        let effective_mode = if let Some(rule) = srwc::config::applied_rule(&wl_surface)
+            && rule.decoration != srwc::config::DecorationMode::Client
         {
             Mode::ServerSide
         } else {
@@ -468,11 +468,11 @@ impl XdgDecorationHandler for Srwm {
     }
 }
 
-delegate_xdg_decoration!(Srwm);
+delegate_xdg_decoration!(Srwc);
 
-use srwm::protocols::foreign_toplevel::{ForeignToplevelHandler, ForeignToplevelManagerState};
+use srwc::protocols::foreign_toplevel::{ForeignToplevelHandler, ForeignToplevelManagerState};
 
-impl ForeignToplevelHandler for Srwm {
+impl ForeignToplevelHandler for Srwc {
     fn foreign_toplevel_manager_state(&mut self) -> &mut ForeignToplevelManagerState {
         &mut self.foreign_toplevel_state
     }
@@ -543,11 +543,11 @@ impl ForeignToplevelHandler for Srwm {
     }
 }
 
-srwm::delegate_foreign_toplevel!(Srwm);
+srwc::delegate_foreign_toplevel!(Srwc);
 
-use srwm::protocols::screencopy::{Screencopy, ScreencopyHandler, ScreencopyManagerState};
+use srwc::protocols::screencopy::{Screencopy, ScreencopyHandler, ScreencopyManagerState};
 
-impl ScreencopyHandler for Srwm {
+impl ScreencopyHandler for Srwc {
     fn frame(&mut self, screencopy: Screencopy) {
         self.pending_screencopies.push(screencopy);
     }
@@ -557,15 +557,15 @@ impl ScreencopyHandler for Srwm {
     }
 }
 
-srwm::delegate_screencopy!(Srwm);
+srwc::delegate_screencopy!(Srwc);
 
-srwm::delegate_image_capture_source!(Srwm);
+srwc::delegate_image_capture_source!(Srwc);
 
-use srwm::protocols::image_copy_capture::{
+use srwc::protocols::image_copy_capture::{
     ImageCopyCaptureHandler, ImageCopyCaptureState, PendingCapture,
 };
 
-impl ImageCopyCaptureHandler for Srwm {
+impl ImageCopyCaptureHandler for Srwc {
     fn image_copy_capture_state(&mut self) -> &mut ImageCopyCaptureState {
         &mut self.image_copy_capture_state
     }
@@ -575,13 +575,13 @@ impl ImageCopyCaptureHandler for Srwm {
     }
 }
 
-srwm::delegate_image_copy_capture!(Srwm);
+srwc::delegate_image_copy_capture!(Srwc);
 
-use srwm::protocols::output_management::{
+use srwc::protocols::output_management::{
     OutputManagementHandler, OutputManagementState, RequestedHeadConfig,
 };
 
-impl OutputManagementHandler for Srwm {
+impl OutputManagementHandler for Srwc {
     fn output_management_state(&mut self) -> &mut OutputManagementState {
         &mut self.output_management_state
     }
@@ -618,7 +618,7 @@ impl OutputManagementHandler for Srwm {
     }
 }
 
-srwm::delegate_output_management!(Srwm);
+srwc::delegate_output_management!(Srwc);
 
 use crate::state::SessionLock;
 use smithay::delegate_session_lock;
@@ -626,7 +626,7 @@ use smithay::wayland::session_lock::{
     LockSurface, SessionLockHandler, SessionLockManagerState, SessionLocker,
 };
 
-impl SessionLockHandler for Srwm {
+impl SessionLockHandler for Srwc {
     fn lock_state(&mut self) -> &mut SessionLockManagerState {
         &mut self.session_lock_manager_state
     }
@@ -694,4 +694,4 @@ impl SessionLockHandler for Srwm {
     }
 }
 
-delegate_session_lock!(Srwm);
+delegate_session_lock!(Srwc);

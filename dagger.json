@@ -1,5 +1,5 @@
 {
-  "name": "srwm-wayland",
+  "name": "srwc",
   "engineVersion": "v0.20.3",
   "sdk": {
     "source": "go"

@@ -15,41 +15,41 @@ use smithay::reexports::wayland_server::Resource;
 use smithay::utils::{Physical, Scale, Size};
 use smithay::wayland::seat::WaylandFocus;
 
-use crate::dbus::mutter_screen_cast::{self, CastSessionId, ScreenCastToSrwm, StreamTargetId};
+use crate::dbus::mutter_screen_cast::{self, CastSessionId, ScreenCastToSrwc, StreamTargetId};
 use crate::render::OutputRenderElements;
-use crate::state::Srwm;
+use crate::state::Srwc;
 
-use pw_utils::{Cast, CastSizeChange, CastTarget, PipeWire, PwToSrwm};
+use pw_utils::{Cast, CastSizeChange, CastTarget, PipeWire, PwToSrwc};
 
 pub struct Screencasting {
     pub casts: Vec<Cast>,
-    pub pw_to_srwm: smithay::reexports::calloop::channel::Sender<PwToSrwm>,
+    pub pw_to_srwc: smithay::reexports::calloop::channel::Sender<PwToSrwc>,
     // Drop PipeWire last, and specifically after casts, to prevent a double-free.
     pub pipewire: Option<PipeWire>,
 }
 
 impl Screencasting {
-    pub fn new(event_loop: &smithay::reexports::calloop::LoopHandle<'static, Srwm>) -> Self {
-        let pw_to_srwm = {
-            let (pw_to_srwm, from_pipewire) = smithay::reexports::calloop::channel::channel();
+    pub fn new(event_loop: &smithay::reexports::calloop::LoopHandle<'static, Srwc>) -> Self {
+        let pw_to_srwc = {
+            let (pw_to_srwc, from_pipewire) = smithay::reexports::calloop::channel::channel();
             event_loop
                 .insert_source(from_pipewire, move |event, _, state| match event {
                     smithay::reexports::calloop::channel::Event::Msg(msg) => state.on_pw_msg(msg),
                     smithay::reexports::calloop::channel::Event::Closed => (),
                 })
                 .unwrap();
-            pw_to_srwm
+            pw_to_srwc
         };
 
         Self {
             casts: vec![],
-            pw_to_srwm,
+            pw_to_srwc,
             pipewire: None,
         }
     }
 }
 
-impl Srwm {
+impl Srwc {
     fn prepare_pw_cast(&mut self) -> anyhow::Result<(GbmDevice<DrmDeviceFd>, FormatSet)> {
         let gbm = self.gbm_device.clone().context("no GBM device available")?;
 
@@ -57,7 +57,7 @@ impl Srwm {
 
         // Ensure PipeWire is initialized.
         if casting.pipewire.is_none() {
-            let pw = PipeWire::new(self.loop_handle.clone(), casting.pw_to_srwm.clone())
+            let pw = PipeWire::new(self.loop_handle.clone(), casting.pw_to_srwc.clone())
                 .context("error initializing PipeWire")?;
             casting.pipewire = Some(pw);
         }
@@ -71,10 +71,10 @@ impl Srwm {
         Ok((gbm, render_formats))
     }
 
-    pub fn on_pw_msg(&mut self, msg: PwToSrwm) {
+    pub fn on_pw_msg(&mut self, msg: PwToSrwc) {
         match msg {
-            PwToSrwm::StopCast { session_id } => self.stop_cast(session_id),
-            PwToSrwm::Redraw { stream_id } => {
+            PwToSrwc::StopCast { session_id } => self.stop_cast(session_id),
+            PwToSrwc::Redraw { stream_id } => {
                 // Request a redraw for the output associated with this cast.
                 let casting = self.screencasting.as_ref();
                 if let Some(casting) = casting
@@ -87,7 +87,7 @@ impl Srwm {
                         .extend(self.drm.active_crtcs.iter().copied());
                 }
             }
-            PwToSrwm::FatalError => {
+            PwToSrwc::FatalError => {
                 tracing::warn!("stopping PipeWire due to fatal error");
                 if let Some(ref mut casting) = self.screencasting
                     && let Some(pw) = casting.pipewire.take()
@@ -105,9 +105,9 @@ impl Srwm {
         }
     }
 
-    pub fn on_screen_cast_msg(&mut self, msg: ScreenCastToSrwm) {
+    pub fn on_screen_cast_msg(&mut self, msg: ScreenCastToSrwc) {
         match msg {
-            ScreenCastToSrwm::StartCast {
+            ScreenCastToSrwc::StartCast {
                 session_id,
                 stream_id,
                 target,
@@ -211,7 +211,7 @@ impl Srwm {
                     }
                 }
             }
-            ScreenCastToSrwm::StopCast { session_id } => self.stop_cast(session_id),
+            ScreenCastToSrwc::StopCast { session_id } => self.stop_cast(session_id),
         }
     }
 

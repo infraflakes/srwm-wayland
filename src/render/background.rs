@@ -177,7 +177,7 @@ impl RenderElement<GlesRenderer> for TileShaderElement {
 /// Update the cached background shader element for the current camera/zoom.
 /// Returns (camera_moved, zoom_changed) for the caller's damage logic.
 pub fn update_background_element(
-    state: &mut crate::state::Srwm,
+    state: &mut crate::state::Srwc,
     output: &Output,
     cur_camera: Point<f64, smithay::utils::Logical>,
     cur_zoom: f64,
@@ -213,7 +213,7 @@ pub fn update_background_element(
 /// Called at startup and on config reload (lazy re-init).
 /// On failure, falls back to `DEFAULT_SHADER` — never leaves background uninitialized.
 pub fn init_background(
-    state: &mut crate::state::Srwm,
+    state: &mut crate::state::Srwc,
     renderer: &mut GlesRenderer,
     initial_size: Size<i32, smithay::utils::Logical>,
     output_name: &str,
@@ -291,11 +291,11 @@ pub fn init_background(
                 Ok(src) => src,
                 Err(e) => {
                     tracing::error!("Failed to read shader {path}: {e}, using default");
-                    srwm::config::DEFAULT_SHADER.to_string()
+                    srwc::config::DEFAULT_SHADER.to_string()
                 }
             }
         } else {
-            srwm::config::DEFAULT_SHADER.to_string()
+            srwc::config::DEFAULT_SHADER.to_string()
         };
 
         let compiled = match renderer.compile_custom_pixel_shader(&shader_source, BG_UNIFORMS) {
@@ -303,7 +303,7 @@ pub fn init_background(
             Err(e) => {
                 tracing::error!("Failed to compile shader: {e}, using default");
                 renderer
-                    .compile_custom_pixel_shader(srwm::config::DEFAULT_SHADER, BG_UNIFORMS)
+                    .compile_custom_pixel_shader(srwc::config::DEFAULT_SHADER, BG_UNIFORMS)
                     .expect("Default shader must compile")
             }
         };

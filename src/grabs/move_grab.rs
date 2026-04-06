@@ -8,8 +8,8 @@ use smithay::{
     utils::{Logical, Point},
 };
 
-use crate::state::{Srwm, output_logical_size, output_state};
-use srwm::canvas::{CanvasPos, canvas_to_screen};
+use crate::state::{Srwc, output_logical_size, output_state};
+use srwc::canvas::{CanvasPos, canvas_to_screen};
 
 /// Which output edge is inhibited after a cross-output teleport.
 #[derive(Clone, Copy)]
@@ -21,7 +21,7 @@ enum Edge {
 }
 
 pub struct MoveSurfaceGrab {
-    pub start_data: GrabStartData<Srwm>,
+    pub start_data: GrabStartData<Srwc>,
     pub window: Window,
     pub initial_window_location: Point<i32, Logical>,
     /// Output this grab is pinned to (uses its camera/zoom throughout).
@@ -32,7 +32,7 @@ pub struct MoveSurfaceGrab {
 
 impl MoveSurfaceGrab {
     pub fn new(
-        start_data: GrabStartData<Srwm>,
+        start_data: GrabStartData<Srwc>,
         window: Window,
         initial_window_location: Point<i32, Logical>,
         output: Output,
@@ -179,12 +179,12 @@ impl MoveSurfaceGrab {
     }
 }
 
-impl PointerGrab<Srwm> for MoveSurfaceGrab {
+impl PointerGrab<Srwc> for MoveSurfaceGrab {
     fn motion(
         &mut self,
-        data: &mut Srwm,
-        handle: &mut PointerInnerHandle<'_, Srwm>,
-        _focus: Option<(<Srwm as SeatHandler>::PointerFocus, Point<f64, Logical>)>,
+        data: &mut Srwc,
+        handle: &mut PointerInnerHandle<'_, Srwc>,
+        _focus: Option<(<Srwc as SeatHandler>::PointerFocus, Point<f64, Logical>)>,
         event: &MotionEvent,
     ) {
         data.render.blur_scene_generation += 1;
@@ -281,8 +281,8 @@ impl PointerGrab<Srwm> for MoveSurfaceGrab {
 
     fn button(
         &mut self,
-        data: &mut Srwm,
-        handle: &mut PointerInnerHandle<'_, Srwm>,
+        data: &mut Srwc,
+        handle: &mut PointerInnerHandle<'_, Srwc>,
         event: &ButtonEvent,
     ) {
         handle.button(data, event);
@@ -292,7 +292,7 @@ impl PointerGrab<Srwm> for MoveSurfaceGrab {
         }
     }
 
-    fn unset(&mut self, _data: &mut Srwm) {
+    fn unset(&mut self, _data: &mut Srwc) {
         output_state(&self.output).edge_pan_velocity = None;
     }
 

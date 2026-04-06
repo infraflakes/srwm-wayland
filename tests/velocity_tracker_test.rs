@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use smithay::utils::Point;
-use srwm::canvas::VelocityTracker;
+use srwc::canvas::VelocityTracker;
 
 #[test]
 fn empty_tracker_returns_zero_velocity() {

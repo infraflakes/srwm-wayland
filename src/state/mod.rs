@@ -73,9 +73,9 @@ use smithay::reexports::drm::control::crtc;
 use crate::backend::Backend;
 use crate::input::gestures::GestureState;
 use crate::screenshot_ui::ScreenshotUi;
-use srwm::canvas::MomentumState;
-use srwm::config::Config;
-use srwm::window_ext::WindowExt;
+use srwc::canvas::MomentumState;
+use srwc::config::Config;
+use srwc::window_ext::WindowExt;
 
 /// A layer surface placed at a fixed canvas position (instead of screen-anchored via LayerMap).
 /// Created when a layer surface's namespace matches a window rule with `position`.
@@ -163,9 +163,9 @@ pub struct FullscreenState {
 
 /// Per-output viewport state, stored on each `Output` via `UserDataMap`.
 /// Wrapped in `Mutex` since `UserDataMap` requires `Sync`.
-/// Fields that are !Send (PixelShaderElement) stay on Srwm.
+/// Fields that are !Send (PixelShaderElement) stay on Srwc.
 /// Fields with non-Copy ownership types (fullscreen, lock_surface)
-/// stay on Srwm for Phase 1 — moved here when multi-output needs them.
+/// stay on Srwc for Phase 1 — moved here when multi-output needs them.
 #[derive(Clone)]
 pub struct OutputState {
     pub camera: Point<f64, Logical>,
@@ -262,10 +262,10 @@ fn state_dir() -> Option<std::path::PathBuf> {
         .or_else(|| {
             std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".local/state"))
         })?;
-    Some(base.join("srwm"))
+    Some(base.join("srwc"))
 }
 
-impl Srwm {
+impl Srwc {
     pub fn save_cameras(&self) {
         let Some(dir) = state_dir() else { return };
         if std::fs::create_dir_all(&dir).is_err() {
@@ -354,11 +354,11 @@ pub struct SessionContext {
 }
 
 /// Central compositor state.
-pub struct Srwm {
+pub struct Srwc {
     // -- global: infrastructure --
     pub start_time: Instant,
     pub display_handle: DisplayHandle,
-    pub loop_handle: LoopHandle<'static, Srwm>,
+    pub loop_handle: LoopHandle<'static, Srwc>,
     pub loop_signal: LoopSignal,
 
     // -- global: desktop --
@@ -371,11 +371,11 @@ pub struct Srwm {
     pub shm_state: ShmState,
     #[allow(dead_code)]
     pub output_manager_state: OutputManagerState,
-    pub seat_state: SeatState<Srwm>,
+    pub seat_state: SeatState<Srwc>,
     pub data_device_state: DataDeviceState,
 
     // -- global: input --
-    pub seat: Seat<Srwm>,
+    pub seat: Seat<Srwc>,
 
     // -- global: cursor --
     pub cursor: CursorState,
@@ -411,20 +411,20 @@ pub struct Srwm {
     pub keyboard_shortcuts_inhibit_state: KeyboardShortcutsInhibitState,
     #[allow(dead_code)]
     pub idle_inhibit_state: IdleInhibitManagerState,
-    pub idle_notifier_state: IdleNotifierState<Srwm>,
+    pub idle_notifier_state: IdleNotifierState<Srwc>,
     #[allow(dead_code)]
     pub presentation_state: PresentationState,
     #[allow(dead_code)]
     pub decoration_state: XdgDecorationState,
     pub layer_shell_state: WlrLayerShellState,
-    pub foreign_toplevel_state: srwm::protocols::foreign_toplevel::ForeignToplevelManagerState,
-    pub screencopy_state: srwm::protocols::screencopy::ScreencopyManagerState,
-    pub output_management_state: srwm::protocols::output_management::OutputManagementState,
-    pub pending_screencopies: Vec<srwm::protocols::screencopy::Screencopy>,
+    pub foreign_toplevel_state: srwc::protocols::foreign_toplevel::ForeignToplevelManagerState,
+    pub screencopy_state: srwc::protocols::screencopy::ScreencopyManagerState,
+    pub output_management_state: srwc::protocols::output_management::OutputManagementState,
+    pub pending_screencopies: Vec<srwc::protocols::screencopy::Screencopy>,
     #[allow(dead_code)]
-    pub image_capture_source_state: srwm::protocols::image_capture_source::ImageCaptureSourceState,
-    pub image_copy_capture_state: srwm::protocols::image_copy_capture::ImageCopyCaptureState,
-    pub pending_captures: Vec<srwm::protocols::image_copy_capture::PendingCapture>,
+    pub image_capture_source_state: srwc::protocols::image_capture_source::ImageCaptureSourceState,
+    pub image_copy_capture_state: srwc::protocols::image_copy_capture::ImageCopyCaptureState,
+    pub pending_captures: Vec<srwc::protocols::image_copy_capture::PendingCapture>,
     pub xdg_foreign_state: XdgForeignState,
     pub session_lock_manager_state: SessionLockManagerState,
     pub session_lock: SessionLock,
@@ -447,7 +447,7 @@ pub struct Srwm {
     pub cycle_state: Option<usize>,
 
     // -- global: key repeat --
-    pub held_action: Option<(u32, srwm::config::Action, Instant)>,
+    pub held_action: Option<(u32, srwc::config::Action, Instant)>,
 
     // -- per-output: fullscreen (keyed by output, since FullscreenState has Window) --
     pub fullscreen: HashMap<Output, FullscreenState>,
@@ -523,10 +523,10 @@ impl ClientData for ClientState {
     fn disconnected(&self, _client_id: ClientId, _reason: DisconnectReason) {}
 }
 
-impl Srwm {
+impl Srwc {
     pub fn new(
         dh: DisplayHandle,
-        loop_handle: LoopHandle<'static, Srwm>,
+        loop_handle: LoopHandle<'static, Srwc>,
         loop_signal: LoopSignal,
     ) -> Self {
         let compositor_state = CompositorState::new::<Self>(&dh);
@@ -560,23 +560,23 @@ impl Srwm {
         let decoration_state = XdgDecorationState::new::<Self>(&dh);
         let layer_shell_state = WlrLayerShellState::new::<Self>(&dh);
         let foreign_toplevel_state =
-            srwm::protocols::foreign_toplevel::ForeignToplevelManagerState::new::<Self, _>(
+            srwc::protocols::foreign_toplevel::ForeignToplevelManagerState::new::<Self, _>(
                 &dh,
                 |_| true,
             );
         let screencopy_state =
-            srwm::protocols::screencopy::ScreencopyManagerState::new::<Self, _>(&dh, |_| true);
+            srwc::protocols::screencopy::ScreencopyManagerState::new::<Self, _>(&dh, |_| true);
         let image_capture_source_state =
-            srwm::protocols::image_capture_source::ImageCaptureSourceState::new::<Self, _>(
+            srwc::protocols::image_capture_source::ImageCaptureSourceState::new::<Self, _>(
                 &dh,
                 |_| true,
             );
         let image_copy_capture_state =
-            srwm::protocols::image_copy_capture::ImageCopyCaptureState::new::<Self, _>(&dh, |_| {
+            srwc::protocols::image_copy_capture::ImageCopyCaptureState::new::<Self, _>(&dh, |_| {
                 true
             });
         let output_management_state =
-            srwm::protocols::output_management::OutputManagementState::new::<Self, _>(&dh, |_| {
+            srwc::protocols::output_management::OutputManagementState::new::<Self, _>(&dh, |_| {
                 true
             });
         let session_lock_manager_state = SessionLockManagerState::new::<Self, _>(&dh, |_| true);
@@ -731,7 +731,7 @@ impl Srwm {
             .elements()
             .filter(|w| {
                 !w.wl_surface()
-                    .and_then(|s| srwm::config::applied_rule(&s))
+                    .and_then(|s| srwc::config::applied_rule(&s))
                     .is_some_and(|r| r.widget)
             })
             .cloned()
@@ -962,7 +962,7 @@ impl Srwm {
         pointer.button(
             self,
             &smithay::input::pointer::ButtonEvent {
-                button: srwm::config::BTN_MIDDLE,
+                button: srwc::config::BTN_MIDDLE,
                 state: smithay::backend::input::ButtonState::Pressed,
                 serial,
                 time: press_time,
@@ -974,7 +974,7 @@ impl Srwm {
             pointer.button(
                 self,
                 &smithay::input::pointer::ButtonEvent {
-                    button: srwm::config::BTN_MIDDLE,
+                    button: srwc::config::BTN_MIDDLE,
                     state: smithay::backend::input::ButtonState::Released,
                     serial,
                     time: rt,
@@ -1033,7 +1033,7 @@ impl Srwm {
                 let os = output_state(output);
                 let size = output_logical_size(output);
                 let visible =
-                    srwm::canvas::visible_canvas_rect(os.camera.to_i32_round(), size, os.zoom);
+                    srwc::canvas::visible_canvas_rect(os.camera.to_i32_round(), size, os.zoom);
                 drop(os);
                 visible.contains(Point::from((center.x as i32, center.y as i32)))
             })
@@ -1045,7 +1045,7 @@ impl Srwm {
     pub fn output_in_direction(
         &self,
         from: &Output,
-        dir: &srwm::config::Direction,
+        dir: &srwc::config::Direction,
     ) -> Option<Output> {
         let from_center: Point<f64, Logical> = {
             let os = output_state(from);
@@ -1112,7 +1112,7 @@ impl Srwm {
         os: &OutputState,
     ) -> Point<f64, Logical> {
         let screen =
-            srwm::canvas::canvas_to_screen(srwm::canvas::CanvasPos(canvas_pos), os.camera, os.zoom)
+            srwc::canvas::canvas_to_screen(srwc::canvas::CanvasPos(canvas_pos), os.camera, os.zoom)
                 .0;
         Point::from((
             screen.x + os.layout_position.x as f64,
@@ -1131,7 +1131,7 @@ impl Srwm {
             layout_pos.x - os.layout_position.x as f64,
             layout_pos.y - os.layout_position.y as f64,
         ));
-        srwm::canvas::screen_to_canvas(srwm::canvas::ScreenPos(screen), os.camera, os.zoom).0
+        srwc::canvas::screen_to_canvas(srwc::canvas::ScreenPos(screen), os.camera, os.zoom).0
     }
 
     /// Batch-access per-output state for the active output under a single mutex lock.
@@ -1209,7 +1209,7 @@ impl Srwm {
         window
             .wl_surface()
             .filter(|s| self.decorations.contains_key(&s.id()))
-            .map_or(0, |_| srwm::config::DecorationConfig::TITLE_BAR_HEIGHT)
+            .map_or(0, |_| srwc::config::DecorationConfig::TITLE_BAR_HEIGHT)
     }
 
     /// Visual center of a window, accounting for SSD title bar above content.
@@ -1226,7 +1226,7 @@ impl Srwm {
     /// Offset a spawn position so it doesn't overlap an existing window.
     /// Walks in diagonal steps (title bar height) until no window is within a few pixels.
     pub fn cascade_position(&self, mut pos: (i32, i32), skip: &Window) -> (i32, i32) {
-        let step = srwm::config::DecorationConfig::TITLE_BAR_HEIGHT;
+        let step = srwc::config::DecorationConfig::TITLE_BAR_HEIGHT;
         loop {
             let dominated = self.space.elements().any(|w| {
                 w != skip
@@ -1245,7 +1245,7 @@ impl Srwm {
 
     /// Hot-reload config from disk. On parse failure, logs an error and keeps the old config.
     pub fn reload_config(&mut self) {
-        let config_path = srwm::config::config_path();
+        let config_path = srwc::config::config_path();
         let contents = match std::fs::read_to_string(&config_path) {
             Ok(c) => c,
             Err(e) => {
@@ -1256,7 +1256,7 @@ impl Srwm {
                 return;
             }
         };
-        let mut new_config = match srwm::config::Config::from_toml(&contents) {
+        let mut new_config = match srwc::config::Config::from_toml(&contents) {
             Ok(c) => c,
             Err(e) => {
                 tracing::error!("Config reload: parse error: {e}");
@@ -1455,7 +1455,7 @@ impl Srwm {
                 let _ = std::process::Command::new("notify-send")
                     .args([
                         "-a",
-                        "srwm",
+                        "srwc",
                         "-i",
                         "camera",
                         "Screenshot Saved",
@@ -1472,7 +1472,7 @@ impl Srwm {
             return;
         };
         let canvas_pos =
-            srwm::canvas::screen_to_canvas(srwm::canvas::ScreenPos(screen_pos), camera, zoom).0;
+            srwc::canvas::screen_to_canvas(srwc::canvas::ScreenPos(screen_pos), camera, zoom).0;
         pointer.motion(
             self,
             None,
@@ -1489,7 +1489,7 @@ impl Srwm {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use srwm::canvas::MomentumState;
+    use srwc::canvas::MomentumState;
 
     fn mock_output_state(
         camera: (f64, f64),
@@ -1519,8 +1519,8 @@ mod tests {
     fn canvas_to_layout_round_trip_zoom_1() {
         let os = mock_output_state((100.0, 200.0), 1.0, (0, 0));
         let canvas = Point::from((150.0, 250.0));
-        let layout = Srwm::canvas_to_layout_pos(canvas, &os);
-        let back = Srwm::layout_to_canvas_pos(layout, &os);
+        let layout = Srwc::canvas_to_layout_pos(canvas, &os);
+        let back = Srwc::layout_to_canvas_pos(layout, &os);
         assert!((back.x - canvas.x).abs() < 0.001);
         assert!((back.y - canvas.y).abs() < 0.001);
     }
@@ -1529,8 +1529,8 @@ mod tests {
     fn canvas_to_layout_round_trip_with_zoom() {
         let os = mock_output_state((50.0, 75.0), 2.0, (1920, 0));
         let canvas = Point::from((80.0, 100.0));
-        let layout = Srwm::canvas_to_layout_pos(canvas, &os);
-        let back = Srwm::layout_to_canvas_pos(layout, &os);
+        let layout = Srwc::canvas_to_layout_pos(canvas, &os);
+        let back = Srwc::layout_to_canvas_pos(layout, &os);
         assert!((back.x - canvas.x).abs() < 0.001);
         assert!((back.y - canvas.y).abs() < 0.001);
     }
@@ -1542,7 +1542,7 @@ mod tests {
         // layout = screen + layout_position = -100+1920 = 1820, -300+0 = -300
         let os = mock_output_state((100.0, 200.0), 2.0, (1920, 0));
         let canvas = Point::from((50.0, 50.0));
-        let layout = Srwm::canvas_to_layout_pos(canvas, &os);
+        let layout = Srwc::canvas_to_layout_pos(canvas, &os);
         assert!((layout.x - 1820.0).abs() < 0.001);
         assert!((layout.y - (-300.0)).abs() < 0.001);
     }
@@ -1554,7 +1554,7 @@ mod tests {
         // canvas = screen / zoom + camera = 0 + 500 = 500, 0 + 300 = 300
         let os = mock_output_state((500.0, 300.0), 1.0, (1920, 0));
         let layout = Point::from((1920.0, 0.0));
-        let canvas = Srwm::layout_to_canvas_pos(layout, &os);
+        let canvas = Srwc::layout_to_canvas_pos(layout, &os);
         assert!((canvas.x - 500.0).abs() < 0.001);
         assert!((canvas.y - 300.0).abs() < 0.001);
     }
@@ -1566,14 +1566,14 @@ mod tests {
 
         let canvas = Point::from((600.0, 300.0));
         // Through output A
-        let layout_a = Srwm::canvas_to_layout_pos(canvas, &os_a);
-        let back_a = Srwm::layout_to_canvas_pos(layout_a, &os_a);
+        let layout_a = Srwc::canvas_to_layout_pos(canvas, &os_a);
+        let back_a = Srwc::layout_to_canvas_pos(layout_a, &os_a);
         assert!((back_a.x - canvas.x).abs() < 0.001);
         assert!((back_a.y - canvas.y).abs() < 0.001);
 
         // Through output B
-        let layout_b = Srwm::canvas_to_layout_pos(canvas, &os_b);
-        let back_b = Srwm::layout_to_canvas_pos(layout_b, &os_b);
+        let layout_b = Srwc::canvas_to_layout_pos(canvas, &os_b);
+        let back_b = Srwc::layout_to_canvas_pos(layout_b, &os_b);
         assert!((back_b.x - canvas.x).abs() < 0.001);
         assert!((back_b.y - canvas.y).abs() < 0.001);
     }
@@ -1584,14 +1584,14 @@ mod camera_persistence_tests {
 
     #[test]
     fn load_cameras_returns_empty_when_no_file() {
-        let tmp = std::env::temp_dir().join(format!("srwm-test-dir-none-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("srwc-test-dir-none-{}", std::process::id()));
         let cameras = load_cameras_from(Some(tmp));
         assert!(cameras.is_empty());
     }
 
     #[test]
     fn load_cameras_round_trip() {
-        let tmp = std::env::temp_dir().join(format!("srwm-test-round-trip-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("srwc-test-round-trip-{}", std::process::id()));
         std::fs::create_dir_all(&tmp).unwrap();
 
         // Write a cameras.toml manually
@@ -1626,7 +1626,7 @@ zoom = 0.75
 
     #[test]
     fn load_cameras_handles_corrupt_file() {
-        let tmp = std::env::temp_dir().join(format!("srwm-test-corrupt-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("srwc-test-corrupt-{}", std::process::id()));
         std::fs::create_dir_all(&tmp).unwrap();
         std::fs::write(tmp.join("cameras.toml"), "this is not valid toml {{{{").unwrap();
         let cameras = load_cameras_from(Some(tmp.clone()));
@@ -1637,7 +1637,7 @@ zoom = 0.75
 
     #[test]
     fn load_cameras_handles_empty_file() {
-        let tmp = std::env::temp_dir().join(format!("srwm-test-empty-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("srwc-test-empty-{}", std::process::id()));
         std::fs::create_dir_all(&tmp).unwrap();
         std::fs::write(tmp.join("cameras.toml"), "").unwrap();
         let cameras = load_cameras_from(Some(tmp.clone()));
@@ -1647,7 +1647,7 @@ zoom = 0.75
 
     #[test]
     fn load_cameras_handles_partial_entry() {
-        let tmp = std::env::temp_dir().join(format!("srwm-test-partial-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("srwc-test-partial-{}", std::process::id()));
         std::fs::create_dir_all(&tmp).unwrap();
         // Missing zoom field
         let content = r#"  

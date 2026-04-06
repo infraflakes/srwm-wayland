@@ -14,8 +14,8 @@ use smithay::{
 
 use smithay::input::pointer::CursorImageStatus;
 
-use crate::state::Srwm;
-use srwm::canvas::{self, CanvasPos, canvas_to_screen};
+use crate::state::Srwc;
+use srwc::canvas::{self, CanvasPos, canvas_to_screen};
 
 /// Tracks the resize lifecycle for a window. Stored in the surface data map
 /// (wrapped in `RefCell`) so that `compositor::commit()` can reposition
@@ -37,7 +37,7 @@ pub enum ResizeState {
 }
 
 pub struct ResizeSurfaceGrab {
-    pub start_data: GrabStartData<Srwm>,
+    pub start_data: GrabStartData<Srwc>,
     pub window: Window,
     pub edges: xdg_toplevel::ResizeEdge,
     pub initial_window_location: Point<i32, Logical>,
@@ -121,12 +121,12 @@ pub fn send_resize_configure(
     false
 }
 
-impl PointerGrab<Srwm> for ResizeSurfaceGrab {
+impl PointerGrab<Srwc> for ResizeSurfaceGrab {
     fn motion(
         &mut self,
-        data: &mut Srwm,
-        handle: &mut PointerInnerHandle<'_, Srwm>,
-        _focus: Option<(<Srwm as SeatHandler>::PointerFocus, Point<f64, Logical>)>,
+        data: &mut Srwc,
+        handle: &mut PointerInnerHandle<'_, Srwc>,
+        _focus: Option<(<Srwc as SeatHandler>::PointerFocus, Point<f64, Logical>)>,
         event: &MotionEvent,
     ) {
         // Force pointer back if Phase 3 input routing crossed to another output.
@@ -184,8 +184,8 @@ impl PointerGrab<Srwm> for ResizeSurfaceGrab {
 
     fn button(
         &mut self,
-        data: &mut Srwm,
-        handle: &mut PointerInnerHandle<'_, Srwm>,
+        data: &mut Srwc,
+        handle: &mut PointerInnerHandle<'_, Srwc>,
         event: &ButtonEvent,
     ) {
         handle.button(data, event);
@@ -225,7 +225,7 @@ impl PointerGrab<Srwm> for ResizeSurfaceGrab {
         }
     }
 
-    fn unset(&mut self, data: &mut Srwm) {
+    fn unset(&mut self, data: &mut Srwc) {
         data.cursor.grab_cursor = false;
         data.cursor.cursor_status = CursorImageStatus::default_named();
     }

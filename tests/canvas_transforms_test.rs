@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use smithay::utils::Point;
-use srwm::canvas::{CanvasPos, MomentumState, ScreenPos, canvas_to_screen, screen_to_canvas};
+use srwc::canvas::{CanvasPos, MomentumState, ScreenPos, canvas_to_screen, screen_to_canvas};
 
 // --- Coordinate transform round-trip tests (zoom=1.0) ---
 

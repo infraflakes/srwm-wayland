@@ -26,12 +26,12 @@ use smithay::utils::{Logical, Rectangle};
 use smithay::wayland::compositor::{RectangleKind, RegionAttributes};
 
 use crate::decorations::DecorationHit;
-use crate::state::{FocusTarget, Srwm};
-use srwm::canvas::{ScreenPos, screen_to_canvas};
+use crate::state::{FocusTarget, Srwc};
+use srwc::canvas::{ScreenPos, screen_to_canvas};
 
 /// Find the canvas-space element location of the window that owns the given surface.
 fn window_origin_for_surface(
-    state: &Srwm,
+    state: &Srwc,
     surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
 ) -> Option<Point<f64, smithay::utils::Logical>> {
     let window = state
@@ -55,7 +55,7 @@ fn region_bounding_box(region: &RegionAttributes) -> Rectangle<i32, Logical> {
     bbox.unwrap_or_default()
 }
 
-impl Srwm {
+impl Srwc {
     /// Process a single input event from any backend (winit, libinput, etc).
     pub fn process_input_event<I: InputBackend>(&mut self, event: InputEvent<I>) {
         self.mark_all_dirty();
@@ -262,7 +262,7 @@ impl Srwm {
     /// Shared by both absolute and relative pointer motion handlers.
     fn dispatch_pointer_focus(
         &mut self,
-        pointer: &smithay::input::pointer::PointerHandle<Srwm>,
+        pointer: &smithay::input::pointer::PointerHandle<Srwc>,
         screen_pos: Point<f64, smithay::utils::Logical>,
         canvas_pos: Point<f64, smithay::utils::Logical>,
         serial: smithay::utils::Serial,
@@ -402,7 +402,7 @@ impl Srwm {
         let Some(window) = window else { return };
         let is_widget = window
             .wl_surface()
-            .and_then(|s| srwm::config::applied_rule(&s))
+            .and_then(|s| srwc::config::applied_rule(&s))
             .is_some_and(|r| r.widget);
         if is_widget {
             return;
@@ -687,8 +687,8 @@ impl Srwm {
         let output_size = crate::state::output_logical_size(&cur_output);
 
         // Convert old canvas pos to screen pos, add layout_position → old layout pos
-        let old_screen = srwm::canvas::canvas_to_screen(
-            srwm::canvas::CanvasPos(old_canvas),
+        let old_screen = srwc::canvas::canvas_to_screen(
+            srwc::canvas::CanvasPos(old_canvas),
             cur_camera,
             cur_zoom,
         )
@@ -739,7 +739,7 @@ impl Srwm {
             (os.camera, os.zoom)
         };
         let mut canvas_pos =
-            srwm::canvas::screen_to_canvas(ScreenPos(screen_pos), target_camera, target_zoom).0;
+            srwc::canvas::screen_to_canvas(ScreenPos(screen_pos), target_camera, target_zoom).0;
 
         // Pointer confinement: clamp position to the constraint region
         if let Some(focus) = pointer.current_focus() {
@@ -793,8 +793,8 @@ impl Srwm {
             if let Some(pos) = clamped {
                 canvas_pos = pos;
                 // Recompute screen_pos so layer shell hit-testing uses the clamped position
-                screen_pos = srwm::canvas::canvas_to_screen(
-                    srwm::canvas::CanvasPos(canvas_pos),
+                screen_pos = srwc::canvas::canvas_to_screen(
+                    srwc::canvas::CanvasPos(canvas_pos),
                     target_camera,
                     target_zoom,
                 )
@@ -832,14 +832,14 @@ impl Srwm {
         pos: Point<f64, smithay::utils::Logical>,
         widget_filter: Option<bool>,
     ) -> Option<(FocusTarget, Point<f64, smithay::utils::Logical>)> {
-        let bar_height = srwm::config::DecorationConfig::TITLE_BAR_HEIGHT;
-        let border_width = srwm::config::DecorationConfig::RESIZE_BORDER_WIDTH;
+        let bar_height = srwc::config::DecorationConfig::TITLE_BAR_HEIGHT;
+        let border_width = srwc::config::DecorationConfig::RESIZE_BORDER_WIDTH;
 
         for window in self.space.elements().rev() {
             let Some(wl_surface) = window.wl_surface() else {
                 continue;
             };
-            let rule = srwm::config::applied_rule(&wl_surface);
+            let rule = srwc::config::applied_rule(&wl_surface);
             if let Some(want_widget) = widget_filter {
                 let is_widget = rule.as_ref().is_some_and(|r| r.widget);
                 if is_widget != want_widget {
@@ -959,8 +959,8 @@ impl Srwm {
         &self,
         pos: Point<f64, smithay::utils::Logical>,
     ) -> Option<(Window, DecorationHit)> {
-        let bar_height = srwm::config::DecorationConfig::TITLE_BAR_HEIGHT;
-        let border_width = srwm::config::DecorationConfig::RESIZE_BORDER_WIDTH;
+        let bar_height = srwc::config::DecorationConfig::TITLE_BAR_HEIGHT;
+        let border_width = srwc::config::DecorationConfig::RESIZE_BORDER_WIDTH;
 
         // Iterate in z-order (topmost first, matching space.elements().rev())
         for window in self.space.elements().rev() {

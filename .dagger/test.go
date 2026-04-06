@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"srwm-wayland/internal/dagger"
+	"srwc/internal/dagger"
 )
 
 // Test runs cargo test using the standard Rust environment.
-func (m *SrwmWayland) Test(ctx context.Context, source *dagger.Directory) *dagger.Container {
+func (m *Srwc) Test(ctx context.Context, source *dagger.Directory) *dagger.Container {
 	return dag.Container().
 		From("rust:latest").
 		WithEnvVariable("DEBIAN_FRONTEND", "noninteractive").

@@ -1,5 +1,5 @@
 use smithay::input::keyboard::{Keysym, ModifiersState, keysyms};
-use srwm::config::{Action, Config, Direction};
+use srwc::config::{Action, Config, Direction};
 
 // ── Modifier helpers ─────────────────────────────────────────────────────
 

@@ -13,7 +13,7 @@ mod state;
 
 use smithay::reexports::wayland_server::Resource;
 use smithay::wayland::shell::xdg::XdgToplevelSurfaceData;
-use state::{ClientState, Srwm};
+use state::{ClientState, Srwc};
 use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Global flags (work regardless of subcommand)
     if std::env::args().any(|a| a == "--version" || a == "-V") {
-        println!("srwm {}", env!("CARGO_PKG_VERSION"));
+        println!("srwc {}", env!("CARGO_PKG_VERSION"));
         return Ok(());
     }
 
@@ -41,14 +41,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             return install::run_uninstall();
         }
         Some("check-config") => {
-            let _config = srwm::config::Config::load();
+            let _config = srwc::config::Config::load();
             tracing::info!("Config OK");
             return Ok(());
         }
         _ => {
-            println!("srwm {}", env!("CARGO_PKG_VERSION"));
+            println!("srwc {}", env!("CARGO_PKG_VERSION"));
             println!();
-            println!("Usage: srwm <command> [options]");
+            println!("Usage: srwc <command> [options]");
             println!();
             println!("Commands:");
             println!("  start          Start the compositor");
@@ -81,14 +81,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
 
     // Create calloop event loop
-    let mut event_loop: smithay::reexports::calloop::EventLoop<Srwm> =
+    let mut event_loop: smithay::reexports::calloop::EventLoop<Srwc> =
         smithay::reexports::calloop::EventLoop::try_new()?;
 
     // Create Wayland display
-    let display = smithay::reexports::wayland_server::Display::<Srwm>::new()?;
+    let display = smithay::reexports::wayland_server::Display::<Srwc>::new()?;
 
     // Build compositor state
-    let mut data = Srwm::new(
+    let mut data = Srwc::new(
         display.handle(),
         event_loop.handle(),
         event_loop.get_signal(),
@@ -112,7 +112,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             calloop::channel::channel::<std::os::unix::net::UnixStream>();
         event_loop
             .handle()
-            .insert_source(service_rx, |event, _, data: &mut Srwm| {
+            .insert_source(service_rx, |event, _, data: &mut Srwc| {
                 if let calloop::channel::Event::Msg(stream) = event {
                     tracing::info!("New service channel client connected");
                     if let Err(e) = data
@@ -132,7 +132,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         data.screencasting = Some(screencasting::Screencasting::new(&event_loop.handle()));
 
         // Create D-Bus calloop channel for ScreenCast messages
-        let (to_srwm, from_screen_cast) = smithay::reexports::calloop::channel::channel();
+        let (to_srwc, from_screen_cast) = smithay::reexports::calloop::channel::channel();
         event_loop
             .handle()
             .insert_source(from_screen_cast, move |event, _, state| match event {
@@ -166,7 +166,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // Create and start the ScreenCast D-Bus service
-        let screen_cast = dbus::ScreenCast::new(ipc_outputs.clone(), to_srwm);
+        let screen_cast = dbus::ScreenCast::new(ipc_outputs.clone(), to_srwc);
         data.conn_screen_cast = dbus::start_screen_cast(screen_cast);
 
         // DisplayConfig — shares the same ipc_outputs Arc as ScreenCast
@@ -175,14 +175,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Introspect — window list for the portal picker
         let (introspect_tx, introspect_rx) = calloop::channel::channel();
-        let (to_introspect, from_srwm) = async_channel::unbounded();
+        let (to_introspect, from_srwc) = async_channel::unbounded();
         event_loop
             .handle()
             .insert_source(introspect_rx, {
                 let to_introspect = to_introspect.clone();
-                move |event, _, data: &mut Srwm| {
+                move |event, _, data: &mut Srwc| {
                     if let calloop::channel::Event::Msg(
-                        dbus::gnome_shell_introspect::IntrospectToSrwm::GetWindows,
+                        dbus::gnome_shell_introspect::IntrospectToSrwc::GetWindows,
                     ) = event
                     {
                         let mut windows = HashMap::new();
@@ -212,14 +212,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             }
                         }
                         let _ = to_introspect.send_blocking(
-                            dbus::gnome_shell_introspect::SrwmToIntrospect::Windows(windows),
+                            dbus::gnome_shell_introspect::SrwcToIntrospect::Windows(windows),
                         );
                     }
                 }
             })
             .expect("failed to insert introspect source");
 
-        let introspect = dbus::gnome_shell_introspect::Introspect::new(introspect_tx, from_srwm);
+        let introspect = dbus::gnome_shell_introspect::Introspect::new(introspect_tx, from_srwc);
         data.conn_introspect = dbus::try_start(introspect);
     }
 
@@ -232,7 +232,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     event_loop
         .handle()
-        .insert_source(display_source, |_, display, data: &mut Srwm| {
+        .insert_source(display_source, |_, display, data: &mut Srwc| {
             // SAFETY: we never drop the Display while the Generic source is alive
             unsafe { display.get_mut() }.dispatch_clients(data).ok();
             Ok(smithay::reexports::calloop::PostAction::Continue)
@@ -248,11 +248,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Standard Wayland session env vars for child processes
     unsafe { std::env::set_var("WAYLAND_DISPLAY", &socket_name) };
     unsafe { std::env::set_var("XDG_SESSION_TYPE", "wayland") };
-    unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "srwm") };
+    unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "srwc") };
     // Toolkit env vars (MOZ_ENABLE_WAYLAND, QT_QPA_PLATFORM, etc.) are now
     // set in Config::load() with user [env] overrides taking precedence.
     unsafe { std::env::set_var("XDG_SESSION_CLASS", "user") };
-    unsafe { std::env::set_var("XDG_SESSION_DESKTOP", "srwm") };
+    unsafe { std::env::set_var("XDG_SESSION_DESKTOP", "srwc") };
 
     let is_session = backend_name == "udev";
     if is_session {
@@ -269,7 +269,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let _ = std::process::Command::new("systemd-run")
             .args([
                 "--user",
-                "--unit=srwm-session.service",
+                "--unit=srwc-session.service",
                 "--property=BindsTo=graphical-session.target",
                 "--property=After=graphical-session-pre.target",
                 "--remain-after-exit",
@@ -298,7 +298,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     event_loop
         .handle()
-        .insert_source(listening_socket, |stream, _, data: &mut Srwm| {
+        .insert_source(listening_socket, |stream, _, data: &mut Srwc| {
             tracing::info!("New client connected");
             if let Err(e) = data
                 .display_handle
@@ -310,7 +310,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Config file watcher: poll mtime every 500ms
     {
-        let config_path = srwm::config::config_path();
+        let config_path = srwc::config::config_path();
         data.config_file_mtime = std::fs::metadata(&config_path)
             .and_then(|m| m.modified())
             .ok();
@@ -320,7 +320,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
         event_loop
             .handle()
-            .insert_source(timer, move |_, _, data: &mut Srwm| {
+            .insert_source(timer, move |_, _, data: &mut Srwc| {
                 let current_mtime = std::fs::metadata(&config_path)
                     .and_then(|m| m.modified())
                     .ok();
@@ -385,7 +385,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // which then deactivates (StopWhenUnneeded=yes), cascading to stop portal
         // services and other dependents.
         let _ = std::process::Command::new("systemctl")
-            .args(["--user", "stop", "srwm-session.service"])
+            .args(["--user", "stop", "srwc-session.service"])
             .status();
         let _ = std::process::Command::new("systemctl")
             .args(["--user", "unset-environment", "WAYLAND_DISPLAY", "DISPLAY"])

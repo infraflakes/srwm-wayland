@@ -20,13 +20,13 @@ use smithay::wayland::seat::WaylandFocus;
 
 use crate::decorations::DecorationHit;
 use crate::grabs::{MoveSurfaceGrab, NavigateGrab, PanGrab, ResizeState, ResizeSurfaceGrab};
-use crate::state::{FocusTarget, PendingMiddleClick, Srwm};
+use crate::state::{FocusTarget, PendingMiddleClick, Srwc};
 use smithay::reexports::wayland_server::Resource;
-use srwm::canvas::{self, CanvasPos, canvas_to_screen};
-use srwm::config::{self, Action, BindingContext, MouseAction};
-use srwm::window_ext::WindowExt;
+use srwc::canvas::{self, CanvasPos, canvas_to_screen};
+use srwc::config::{self, Action, BindingContext, MouseAction};
+use srwc::window_ext::WindowExt;
 
-impl Srwm {
+impl Srwc {
     /// Determine the binding context for the current pointer position.
     pub(super) fn pointer_context(
         &self,
@@ -116,7 +116,7 @@ impl Srwm {
                 ));
                 if let Ok(token) = self
                     .loop_handle
-                    .insert_source(timer, |_, _, data: &mut Srwm| {
+                    .insert_source(timer, |_, _, data: &mut Srwc| {
                         data.flush_pending_middle_click();
                         TimeoutAction::Drop
                     })
@@ -402,7 +402,7 @@ impl Srwm {
     /// otherwise infer edges from pointer position within the window.
     pub(super) fn start_compositor_resize(
         &mut self,
-        pointer: &smithay::input::pointer::PointerHandle<Srwm>,
+        pointer: &smithay::input::pointer::PointerHandle<Srwc>,
         window: &smithay::desktop::Window,
         pos: Point<f64, smithay::utils::Logical>,
         button: u32,
@@ -413,7 +413,7 @@ impl Srwm {
 
     pub(super) fn start_compositor_resize_with_edge(
         &mut self,
-        pointer: &smithay::input::pointer::PointerHandle<Srwm>,
+        pointer: &smithay::input::pointer::PointerHandle<Srwc>,
         window: &smithay::desktop::Window,
         pos: Point<f64, smithay::utils::Logical>,
         button: u32,

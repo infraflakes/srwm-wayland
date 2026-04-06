@@ -4,12 +4,12 @@ use smithay::{
     wayland::seat::WaylandFocus,
 };
 
-use crate::state::{FocusTarget, HomeReturn, Srwm};
-use srwm::canvas::{self};
-use srwm::config::Action;
-use srwm::window_ext::WindowExt;
+use crate::state::{FocusTarget, HomeReturn, Srwc};
+use srwc::canvas::{self};
+use srwc::config::Action;
+use srwc::window_ext::WindowExt;
 
-impl Srwm {
+impl Srwc {
     pub fn execute_action(&mut self, action: &Action) {
         // Snapshot fullscreen window before the guard exits it.
         // Also check gesture_exited_fullscreen (set by exit_fullscreen_for_gesture
@@ -58,7 +58,7 @@ impl Srwm {
             Action::NudgeWindow(dir) => {
                 let keyboard = self.keyboard();
                 if let Some(focus) = keyboard.current_focus() {
-                    if srwm::config::applied_rule(&focus.0).is_some_and(|r| r.widget) {
+                    if srwc::config::applied_rule(&focus.0).is_some_and(|r| r.widget) {
                         return;
                     }
                     let window = self
@@ -118,7 +118,7 @@ impl Srwm {
             Action::CenterWindow => {
                 let keyboard = self.keyboard();
                 let focused_non_widget = keyboard.current_focus().and_then(|focus| {
-                    if srwm::config::applied_rule(&focus.0).is_some_and(|r| r.widget) {
+                    if srwc::config::applied_rule(&focus.0).is_some_and(|r| r.widget) {
                         return None;
                     }
                     self.space
@@ -142,7 +142,7 @@ impl Srwm {
                         .filter(|w| {
                             !w.wl_surface()
                                 .as_ref()
-                                .and_then(|s| srwm::config::applied_rule(s))
+                                .and_then(|s| srwc::config::applied_rule(s))
                                 .is_some_and(|r| r.widget)
                         })
                         .min_by(|a, b| {
@@ -207,7 +207,7 @@ impl Srwm {
                     .filter(|w| {
                         !w.wl_surface()
                             .as_ref()
-                            .and_then(|s| srwm::config::applied_rule(s))
+                            .and_then(|s| srwc::config::applied_rule(s))
                             .is_some_and(|r| r.widget)
                     })
                     .map(|w| {
@@ -399,7 +399,7 @@ impl Srwm {
                             .filter(|w| {
                                 !w.wl_surface()
                                     .as_ref()
-                                    .and_then(|s| srwm::config::applied_rule(s))
+                                    .and_then(|s| srwc::config::applied_rule(s))
                                     .is_some_and(|r| r.widget)
                             })
                             .map(|w| {
@@ -462,7 +462,7 @@ impl Srwm {
             Action::SendToOutput(dir) => {
                 let keyboard = self.keyboard();
                 if let Some(focus) = keyboard.current_focus() {
-                    if srwm::config::applied_rule(&focus.0).is_some_and(|r| r.widget) {
+                    if srwc::config::applied_rule(&focus.0).is_some_and(|r| r.widget) {
                         return;
                     }
                     let window = self

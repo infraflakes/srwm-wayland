@@ -7,15 +7,15 @@ use zbus::zvariant::{SerializeDict, Type, Value};
 use super::Start;
 
 pub struct Introspect {
-    to_srwm: calloop::channel::Sender<IntrospectToSrwm>,
-    from_srwm: async_channel::Receiver<SrwmToIntrospect>,
+    to_srwc: calloop::channel::Sender<IntrospectToSrwc>,
+    from_srwc: async_channel::Receiver<SrwcToIntrospect>,
 }
 
-pub enum IntrospectToSrwm {
+pub enum IntrospectToSrwc {
     GetWindows,
 }
 
-pub enum SrwmToIntrospect {
+pub enum SrwcToIntrospect {
     Windows(HashMap<u64, WindowProperties>),
 }
 
@@ -30,14 +30,14 @@ pub struct WindowProperties {
 #[interface(name = "org.gnome.Shell.Introspect")]
 impl Introspect {
     async fn get_windows(&self) -> fdo::Result<HashMap<u64, WindowProperties>> {
-        if let Err(err) = self.to_srwm.send(IntrospectToSrwm::GetWindows) {
-            tracing::warn!("error sending message to srwm: {err:?}");
+        if let Err(err) = self.to_srwc.send(IntrospectToSrwc::GetWindows) {
+            tracing::warn!("error sending message to srwc: {err:?}");
             return Err(fdo::Error::Failed("internal error".to_owned()));
         }
-        match self.from_srwm.recv().await {
-            Ok(SrwmToIntrospect::Windows(windows)) => Ok(windows),
+        match self.from_srwc.recv().await {
+            Ok(SrwcToIntrospect::Windows(windows)) => Ok(windows),
             Err(err) => {
-                tracing::warn!("error receiving from srwm: {err:?}");
+                tracing::warn!("error receiving from srwc: {err:?}");
                 Err(fdo::Error::Failed("internal error".to_owned()))
             }
         }
@@ -49,10 +49,10 @@ impl Introspect {
 
 impl Introspect {
     pub fn new(
-        to_srwm: calloop::channel::Sender<IntrospectToSrwm>,
-        from_srwm: async_channel::Receiver<SrwmToIntrospect>,
+        to_srwc: calloop::channel::Sender<IntrospectToSrwc>,
+        from_srwc: async_channel::Receiver<SrwcToIntrospect>,
     ) -> Self {
-        Self { to_srwm, from_srwm }
+        Self { to_srwc, from_srwc }
     }
 }
 

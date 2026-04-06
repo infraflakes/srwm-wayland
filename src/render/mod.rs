@@ -32,7 +32,7 @@ use smithay::utils::IsAlive;
 use smithay::wayland::compositor::with_states;
 use smithay::wayland::seat::WaylandFocus;
 
-use srwm::canvas::{self, CanvasPos, canvas_to_screen};
+use srwc::canvas::{self, CanvasPos, canvas_to_screen};
 
 mod background;
 mod blur;
@@ -113,7 +113,7 @@ fn shadow_uniforms(
     shadow_radius: f32,
     corner_radius: f32,
 ) -> Vec<Uniform<'static>> {
-    use srwm::config::DecorationConfig;
+    use srwc::config::DecorationConfig;
     let sc = DecorationConfig::SHADOW_COLOR;
     vec![
         Uniform::new(
@@ -288,7 +288,7 @@ impl RenderElement<GlesRenderer> for RoundedCornerElement {
 /// Build render elements for X11 override-redirect windows (menus, tooltips, splashes).
 /// Same camera/zoom math as managed windows.
 fn build_override_redirect_elements(
-    state: &crate::state::Srwm,
+    state: &crate::state::Srwc,
     renderer: &mut GlesRenderer,
     output: &Output,
     camera: Point<f64, Logical>,
@@ -340,7 +340,7 @@ fn build_override_redirect_elements(
 /// Build render elements for canvas-positioned layer surfaces (zoomed like windows).
 /// Mirrors the window pipeline: position relative to camera, then RescaleRenderElement for zoom.
 pub fn build_canvas_layer_elements(
-    state: &crate::state::Srwm,
+    state: &crate::state::Srwc,
     renderer: &mut GlesRenderer,
     output: &Output,
     camera: Point<f64, smithay::utils::Logical>,
@@ -387,7 +387,7 @@ fn build_layer_elements(
     output: &Output,
     renderer: &mut GlesRenderer,
     layer: WlrLayer,
-    blur_config: Option<(&srwm::config::Config, bool, BlurLayer)>,
+    blur_config: Option<(&srwc::config::Config, bool, BlurLayer)>,
 ) -> (Vec<OutputRenderElements>, Vec<BlurRequestData>) {
     let map = layer_map_for_output(output);
     let output_scale = output.current_scale().fractional_scale();
@@ -437,7 +437,7 @@ fn build_layer_elements(
 /// `camera` and `zoom` are from the output being rendered.
 /// Returns `OutputRenderElements` — either xcursor memory buffers or client surface elements.
 pub fn build_cursor_elements(
-    state: &mut crate::state::Srwm,
+    state: &mut crate::state::Srwc,
     renderer: &mut GlesRenderer,
     camera: Point<f64, smithay::utils::Logical>,
     zoom: f64,
@@ -495,7 +495,7 @@ pub fn build_cursor_elements(
 
 /// Build xcursor memory buffer elements for a named cursor icon.
 fn build_xcursor_elements(
-    state: &mut crate::state::Srwm,
+    state: &mut crate::state::Srwc,
     renderer: &mut GlesRenderer,
     physical_pos: Point<f64, Physical>,
     name: &'static str,
@@ -547,7 +547,7 @@ fn build_xcursor_elements(
 /// Build render elements for a locked session: only the lock surface.
 /// No compositor cursor — the lock client manages its own visuals.
 fn compose_lock_frame(
-    state: &crate::state::Srwm,
+    state: &crate::state::Srwc,
     renderer: &mut GlesRenderer,
     output: &Output,
     _cursor_elements: Vec<OutputRenderElements>,
@@ -574,7 +574,7 @@ fn compose_lock_frame(
 /// Assemble all render elements for a frame.
 /// Caller provides cursor elements (built before taking the renderer).
 pub fn compose_frame(
-    state: &mut crate::state::Srwm,
+    state: &mut crate::state::Srwc,
     renderer: &mut GlesRenderer,
     output: &Output,
     cursor_elements: Vec<OutputRenderElements>,
@@ -642,8 +642,8 @@ pub fn compose_frame(
         let mut bbox = window.bbox();
         bbox.loc += loc - geom_loc;
         if has_ssd {
-            let r = srwm::config::DecorationConfig::SHADOW_RADIUS.ceil() as i32;
-            let bar = srwm::config::DecorationConfig::TITLE_BAR_HEIGHT;
+            let r = srwc::config::DecorationConfig::SHADOW_RADIUS.ceil() as i32;
+            let bar = srwc::config::DecorationConfig::TITLE_BAR_HEIGHT;
             bbox.loc.x -= r;
             bbox.loc.y -= bar + r;
             bbox.size.w += 2 * r;
@@ -657,7 +657,7 @@ pub fn compose_frame(
             loc.x as f64 - geom_loc.x as f64 - camera.x,
             loc.y as f64 - geom_loc.y as f64 - camera.y,
         ));
-        let applied = srwm::config::applied_rule(&wl_surface);
+        let applied = srwc::config::applied_rule(&wl_surface);
         let is_widget = applied.as_ref().is_some_and(|r| r.widget);
         let wants_blur = blur_enabled && applied.as_ref().is_some_and(|r| r.blur);
         let opacity = applied.as_ref().and_then(|r| r.opacity).unwrap_or(1.0);
@@ -678,7 +678,7 @@ pub fn compose_frame(
         let mut shadow_count = 0usize;
 
         if has_ssd {
-            let bar_height = srwm::config::DecorationConfig::TITLE_BAR_HEIGHT;
+            let bar_height = srwc::config::DecorationConfig::TITLE_BAR_HEIGHT;
             let is_focused = focused_surface.as_ref().is_some_and(|f| *f == *wl_surface);
 
             // Update decoration state (re-render title bar if needed)
@@ -779,7 +779,7 @@ pub fn compose_frame(
             // Shadow element: cached per-window, rebuilt only on resize.
             // Stable Id lets the damage tracker skip unchanged shadow regions.
             if let Some(ref shader) = state.render.shadow_shader {
-                use srwm::config::DecorationConfig;
+                use srwc::config::DecorationConfig;
                 let radius = DecorationConfig::SHADOW_RADIUS;
                 let r = radius.ceil() as i32;
                 let shadow_w = geom_size.w + 2 * r;
@@ -848,7 +848,7 @@ pub fn compose_frame(
 
             let rule_forced = applied
                 .as_ref()
-                .is_some_and(|r| r.decoration != srwm::config::DecorationMode::Client);
+                .is_some_and(|r| r.decoration != srwc::config::DecorationMode::Client);
 
             if !rule_forced && !is_fullscreen {
                 if radius > 0.0 {
@@ -909,7 +909,7 @@ pub fn compose_frame(
 
                 // Compositor shadow behind CSD windows
                 if let Some(ref shadow_shader) = state.render.shadow_shader {
-                    use srwm::config::DecorationConfig;
+                    use srwc::config::DecorationConfig;
                     let shadow_radius = DecorationConfig::SHADOW_RADIUS;
                     let sr = shadow_radius.ceil() as i32;
                     let shadow_w = geom_size.w + 2 * sr;
@@ -980,7 +980,7 @@ pub fn compose_frame(
             let screen_loc: Point<i32, Logical> =
                 Point::from(((render_loc.x * zoom) as i32, (render_loc.y * zoom) as i32));
             let screen_size: Size<i32, Logical> = if has_ssd {
-                let bar = srwm::config::DecorationConfig::TITLE_BAR_HEIGHT;
+                let bar = srwc::config::DecorationConfig::TITLE_BAR_HEIGHT;
                 (
                     (geom_size.w as f64 * zoom).ceil() as i32,
                     ((geom_size.h + bar) as f64 * zoom).ceil() as i32,
@@ -998,7 +998,7 @@ pub fn compose_frame(
                     Point::from((
                         screen_loc.x,
                         screen_loc.y
-                            - (srwm::config::DecorationConfig::TITLE_BAR_HEIGHT as f64 * zoom)
+                            - (srwc::config::DecorationConfig::TITLE_BAR_HEIGHT as f64 * zoom)
                                 as i32,
                     ))
                 } else {
@@ -1149,7 +1149,7 @@ pub fn compose_frame(
 
 /// Draw thin outlines showing where other monitors' viewports sit on the canvas.
 fn build_output_outline_elements(
-    state: &crate::state::Srwm,
+    state: &crate::state::Srwc,
     renderer: &mut GlesRenderer,
     output: &Output,
     camera: Point<f64, Logical>,
@@ -1270,11 +1270,11 @@ fn build_output_outline_elements(
 
 /// Sync foreign-toplevel protocol state with the current window list.
 /// Call once per frame iteration (not per-output).
-pub fn refresh_foreign_toplevels(state: &mut crate::state::Srwm) {
+pub fn refresh_foreign_toplevels(state: &mut crate::state::Srwc) {
     let keyboard = state.keyboard();
     let focused = keyboard.current_focus().map(|f| f.0);
     let outputs: Vec<Output> = state.space.outputs().cloned().collect();
-    srwm::protocols::foreign_toplevel::refresh::<crate::state::Srwm>(
+    srwc::protocols::foreign_toplevel::refresh::<crate::state::Srwc>(
         &mut state.foreign_toplevel_state,
         &state.space,
         focused.as_ref(),
@@ -1283,7 +1283,7 @@ pub fn refresh_foreign_toplevels(state: &mut crate::state::Srwm) {
 }
 
 /// Post-render: frame callbacks, space cleanup.
-pub fn post_render(state: &mut crate::state::Srwm, output: &Output) {
+pub fn post_render(state: &mut crate::state::Srwc, output: &Output) {
     // Frame callbacks to windows
     let time = state.start_time.elapsed();
     for window in state.space.elements() {

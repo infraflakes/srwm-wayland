@@ -52,7 +52,7 @@ use zbus::object_server::SignalEmitter;
 use crate::dbus::mutter_screen_cast::{self, CastSessionId, CastStreamId, CursorMode};
 use crate::render::OutputRenderElements;
 use crate::render::dmabuf::{render_and_download, render_to_dmabuf};
-use crate::state::Srwm;
+use crate::state::Srwc;
 
 // Give a 0.1 ms allowance for presentation time errors.
 const CAST_DELAY_ALLOWANCE: Duration = Duration::from_micros(100);
@@ -71,11 +71,11 @@ pub struct PipeWire {
     _context: ContextRc,
     pub core: CoreRc,
     pub token: RegistrationToken,
-    event_loop: LoopHandle<'static, Srwm>,
-    to_srwm: smithay::reexports::calloop::channel::Sender<PwToSrwm>,
+    event_loop: LoopHandle<'static, Srwc>,
+    to_srwc: smithay::reexports::calloop::channel::Sender<PwToSrwc>,
 }
 
-pub enum PwToSrwm {
+pub enum PwToSrwc {
     StopCast { session_id: CastSessionId },
     Redraw { stream_id: CastStreamId },
     FatalError,
@@ -98,7 +98,7 @@ impl CastTarget {
 }
 
 pub struct Cast {
-    event_loop: LoopHandle<'static, Srwm>,
+    event_loop: LoopHandle<'static, Srwc>,
     pub session_id: CastSessionId,
     pub stream_id: CastStreamId,
     _listener: StreamListener<()>,
@@ -187,23 +187,23 @@ macro_rules! make_params {
 
 impl PipeWire {
     pub fn new(
-        event_loop: LoopHandle<'static, Srwm>,
-        to_srwm: smithay::reexports::calloop::channel::Sender<PwToSrwm>,
+        event_loop: LoopHandle<'static, Srwc>,
+        to_srwc: smithay::reexports::calloop::channel::Sender<PwToSrwc>,
     ) -> anyhow::Result<Self> {
         let main_loop = MainLoopRc::new(None).context("error creating MainLoop")?;
         let context = ContextRc::new(&main_loop, None).context("error creating Context")?;
         let core = context.connect_rc(None).context("error creating Core")?;
 
-        let to_srwm_ = to_srwm.clone();
+        let to_srwc_ = to_srwc.clone();
         let listener = core
             .add_listener_local()
             .error(move |id, seq, res, message| {
                 tracing::warn!(id, seq, res, message, "pw error");
                 if id == PW_ID_CORE
                     && res == -32
-                    && let Err(err) = to_srwm_.send(PwToSrwm::FatalError)
+                    && let Err(err) = to_srwc_.send(PwToSrwc::FatalError)
                 {
-                    tracing::warn!("error sending FatalError to srwm: {err:?}");
+                    tracing::warn!("error sending FatalError to srwc: {err:?}");
                 }
             })
             .register();
@@ -228,7 +228,7 @@ impl PipeWire {
             core,
             token,
             event_loop,
-            to_srwm,
+            to_srwc,
         })
     }
 
@@ -246,23 +246,23 @@ impl PipeWire {
         mut cursor_mode: CursorMode,
         signal_ctx: SignalEmitter<'static>,
     ) -> anyhow::Result<Cast> {
-        let to_srwm_ = self.to_srwm.clone();
+        let to_srwc_ = self.to_srwc.clone();
         let stop_cast = move || {
-            if let Err(err) = to_srwm_.send(PwToSrwm::StopCast { session_id }) {
-                tracing::warn!(%session_id, "error sending StopCast to srwm: {err:?}");
+            if let Err(err) = to_srwc_.send(PwToSrwc::StopCast { session_id }) {
+                tracing::warn!(%session_id, "error sending StopCast to srwc: {err:?}");
             }
         };
-        let to_srwm_ = self.to_srwm.clone();
+        let to_srwc_ = self.to_srwc.clone();
         let redraw = move || {
-            if let Err(err) = to_srwm_.send(PwToSrwm::Redraw { stream_id }) {
-                tracing::warn!(%stream_id, "error sending Redraw to srwm: {err:?}");
+            if let Err(err) = to_srwc_.send(PwToSrwc::Redraw { stream_id }) {
+                tracing::warn!(%stream_id, "error sending Redraw to srwc: {err:?}");
             }
         };
         let redraw_ = redraw.clone();
 
         let stream = StreamRc::new(
             self.core.clone(),
-            "srwm-screen-cast-src",
+            "srwc-screen-cast-src",
             PropertiesBox::new(),
         )
         .context("error creating Stream")?;

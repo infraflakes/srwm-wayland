@@ -1,4 +1,4 @@
-use srwm::config::{
+use srwc::config::{
     AccelProfile, Config, CycleModifier, GestureThresholds, InputConfig, ModKey,
     MouseDeviceSettings, NavigationConfig, TrackpadSettings, ZoomConfig,
 };

@@ -27,7 +27,7 @@ impl Backend {
 /// On `Ready`, starts the X11 window manager and sets `DISPLAY`.
 pub fn spawn_xwayland(
     dh: &smithay::reexports::wayland_server::DisplayHandle,
-    loop_handle: &smithay::reexports::calloop::LoopHandle<'static, crate::state::Srwm>,
+    loop_handle: &smithay::reexports::calloop::LoopHandle<'static, crate::state::Srwc>,
 ) {
     use smithay::xwayland::xwm::X11Wm;
     use smithay::xwayland::{XWayland, XWaylandEvent};

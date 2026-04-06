@@ -30,14 +30,14 @@ pub fn get_capture_state<'a>(
 
 /// Fulfill pending screencopy requests by rendering to offscreen textures.
 pub fn render_screencopy(
-    state: &mut crate::state::Srwm,
+    state: &mut crate::state::Srwc,
     renderer: &mut GlesRenderer,
     output: &Output,
     elements: &[OutputRenderElements],
 ) {
     use smithay::backend::renderer::Renderer;
     use smithay::wayland::shm;
-    use srwm::protocols::screencopy::ScreencopyBuffer;
+    use srwc::protocols::screencopy::ScreencopyBuffer;
     use std::ptr;
 
     // Extract only requests for this output, keep the rest
@@ -308,7 +308,7 @@ pub fn render_to_dmabuf(
 
 /// Fulfill pending ext-image-copy-capture frames by rendering to offscreen textures.
 pub fn render_capture_frames(
-    state: &mut crate::state::Srwm,
+    state: &mut crate::state::Srwc,
     renderer: &mut GlesRenderer,
     output: &Output,
     elements: &[OutputRenderElements],
@@ -473,7 +473,7 @@ pub fn render_capture_frames(
             capture.frame.ready();
             let frame_data = capture
                 .frame
-                .data::<std::sync::Mutex<srwm::protocols::image_copy_capture::CaptureFrameData>>();
+                .data::<std::sync::Mutex<srwc::protocols::image_copy_capture::CaptureFrameData>>();
             if let Some(fd) = frame_data {
                 let fd = fd.lock().unwrap();
                 state.image_copy_capture_state.frame_done(&fd.session);

@@ -1,5 +1,5 @@
 use smithay::utils::{Logical, Point, Rectangle, Size};
-use srwm::canvas::{
+use srwc::canvas::{
     MIN_ZOOM_FLOOR, all_windows_bbox, is_origin_visible, snap_zoom, visible_canvas_rect,
     zoom_anchor_camera, zoom_to_fit,
 };
