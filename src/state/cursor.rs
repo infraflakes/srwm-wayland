@@ -62,8 +62,39 @@ impl CursorState {
     pub fn load_xcursor(&mut self, name: &str) -> Option<&CursorFrames> {
         if !self.cursor_buffers.contains_key(name) {
             let theme_name = std::env::var("XCURSOR_THEME").unwrap_or_else(|_| "default".into());
-            let theme = xcursor::CursorTheme::load(&theme_name);
-            let path = theme.load_icon(name);
+
+            // search XCURSOR_PATH directories
+            let path = std::env::var("XCURSOR_PATH")
+                .ok()
+                .and_then(|xcursor_path| {
+                    for dir in xcursor_path.split(':') {
+                        let candidate = std::path::PathBuf::from(dir)
+                            .join(&theme_name)
+                            .join("cursors")
+                            .join(name);
+                        if candidate.exists() {
+                            return Some(candidate);
+                        }
+                    }
+                    // Also try "default" theme in XCURSOR_PATH dirs
+                    if theme_name != "default" {
+                        for dir in xcursor_path.split(':') {
+                            let candidate = std::path::PathBuf::from(dir)
+                                .join("default")
+                                .join("cursors")
+                                .join(name);
+                            if candidate.exists() {
+                                return Some(candidate);
+                            }
+                        }
+                    }
+                    None
+                })
+                // Fall back to xcursor crate's built-in search (works on standard Linux distros)
+                .or_else(|| {
+                    let theme = xcursor::CursorTheme::load(&theme_name);
+                    theme.load_icon(name)
+                });
 
             let images = path
                 .and_then(|p| std::fs::read(p).ok())
