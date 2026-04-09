@@ -33,7 +33,6 @@
       libgbm
       libxkbcommon
       libdrm
-      systemd
       libglvnd
       libx11
       libxcursor
@@ -43,6 +42,7 @@
       pixman
       dbus
       pipewire
+      systemd
     ];
 
     runtimeLibs = with pkgs; [
@@ -53,7 +53,6 @@
       libgbm
       libxkbcommon
       libdrm
-      systemd
       libglvnd
       libx11
       libxcursor
@@ -63,6 +62,7 @@
       pixman
       dbus
       pipewire
+      systemd
     ];
   in {
     packages.${system}.default = pkgs.rustPlatform.buildRustPackage rec {
@@ -98,7 +98,8 @@
       postFixup = ''
         patchelf --add-rpath "${pkgs.lib.makeLibraryPath runtimeLibs}" $out/bin/srwc
         wrapProgram $out/bin/srwc \
-          --prefix XCURSOR_PATH : "${pkgs.adwaita-icon-theme}/share/icons"
+          --prefix XCURSOR_PATH : "${pkgs.adwaita-icon-theme}/share/icons" \
+          --prefix PATH : "${pkgs.lib.makeBinPath [pkgs.xdg-utils pkgs.libnotify]}"
       '';
 
       postInstall = ''
