@@ -46,11 +46,6 @@
     # animation_speed = 0.3       # camera lerp factor (higher = faster)
     # nudge_step = 20             # px per nudge-window action (mod-shift-arrow by default)
     # pan_step = 100.0            # px per pan-viewport action (mod-ctrl-arrow by default)
-    # Anchors: canvas points discoverable by center-nearest (4-finger swipe / Mod+Arrow)
-    # even when no window is there. Uses Y-up coordinate system.
-    # anchors = [[0, 0]]
-    # Example with 4 corners:
-    # # anchors = [[0, 0], [-1750, 1750], [1750, 1750], [1750, -1750], [-1750, -1750]]
 
     [navigation.edge_pan]
     # zone = 100.0                # activation zone width (px from viewport edge)
@@ -94,7 +89,6 @@
     "mod+f" = "toggle-fullscreen"
     "mod+m" = "fit-window"
     "mod+g" = "center-window"
-    # "mod+a" = "home-toggle"
     "mod+up" = "center-nearest up"
     "mod+down" = "center-nearest down"
     "mod+left" = "center-nearest left"

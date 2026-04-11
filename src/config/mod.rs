@@ -14,7 +14,7 @@ use std::collections::HashMap;
 
 use smithay::backend::input::AxisSource;
 use smithay::input::keyboard::{Keysym, ModifiersState};
-use smithay::utils::{Point, Transform};
+use smithay::utils::Transform;
 
 use defaults::{default_bindings, default_gesture_bindings, default_mouse_bindings};
 use toml::{
@@ -404,13 +404,6 @@ impl Config {
                 edge_pan_min: raw.navigation.edge_pan.speed_min.unwrap_or(4.0),
                 edge_pan_max: raw.navigation.edge_pan.speed_max.unwrap_or(10.0),
                 animation_speed: raw.navigation.animation_speed.unwrap_or(0.3),
-                anchors: raw
-                    .navigation
-                    .anchors
-                    .unwrap_or_else(|| vec![[0.0, 0.0]])
-                    .into_iter()
-                    .map(|[x, y]| Point::from((x, -y)))
-                    .collect(),
             },
             zoom: ZoomConfig {
                 step: raw.zoom.step.unwrap_or(1.1),

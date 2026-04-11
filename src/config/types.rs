@@ -3,7 +3,7 @@ use std::f64::consts::FRAC_1_SQRT_2;
 use std::hash::Hash;
 
 use smithay::input::keyboard::ModifiersState;
-use smithay::utils::{Logical, Point, Transform};
+use smithay::utils::Transform;
 
 pub const BTN_LEFT: u32 = 0x110;
 pub const BTN_RIGHT: u32 = 0x111;
@@ -47,8 +47,6 @@ pub enum Action {
     CenterWindow,
     CenterNearest(Direction),
     CycleWindows { backward: bool },
-    HomeToggle,
-    GoToPosition(f64, f64),
     ZoomIn,
     ZoomOut,
     ZoomReset,
@@ -545,7 +543,6 @@ pub struct NavigationConfig {
     pub edge_pan_min: f64,
     pub edge_pan_max: f64,
     pub animation_speed: f64,
-    pub anchors: Vec<Point<f64, Logical>>,
 }
 
 impl Default for NavigationConfig {
@@ -560,7 +557,6 @@ impl Default for NavigationConfig {
             edge_pan_min: 4.0,
             edge_pan_max: 10.0,
             animation_speed: 0.3,
-            anchors: vec![Point::from((0.0, 0.0))],
         }
     }
 }

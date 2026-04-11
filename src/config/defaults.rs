@@ -107,41 +107,6 @@ pub(super) fn default_bindings(
         (
             KeyCombo {
                 modifiers: m.clone(),
-                sym: Keysym::from(keysyms::KEY_a),
-            },
-            Action::HomeToggle,
-        ),
-        (
-            KeyCombo {
-                modifiers: m.clone(),
-                sym: Keysym::from(keysyms::KEY_1),
-            },
-            Action::GoToPosition(-1750.0, 1750.0),
-        ),
-        (
-            KeyCombo {
-                modifiers: m.clone(),
-                sym: Keysym::from(keysyms::KEY_2),
-            },
-            Action::GoToPosition(1750.0, 1750.0),
-        ),
-        (
-            KeyCombo {
-                modifiers: m.clone(),
-                sym: Keysym::from(keysyms::KEY_3),
-            },
-            Action::GoToPosition(1750.0, -1750.0),
-        ),
-        (
-            KeyCombo {
-                modifiers: m.clone(),
-                sym: Keysym::from(keysyms::KEY_4),
-            },
-            Action::GoToPosition(-1750.0, -1750.0),
-        ),
-        (
-            KeyCombo {
-                modifiers: m.clone(),
                 sym: Keysym::from(keysyms::KEY_c),
             },
             Action::CenterWindow,
@@ -563,24 +528,10 @@ pub(super) fn default_gesture_bindings(
         ),
         (
             GestureBinding {
-                modifiers: Modifiers::EMPTY,
-                trigger: GestureTrigger::PinchOut { fingers: 4 },
-            },
-            GestureConfigEntry::Threshold(ThresholdAction::Fixed(Action::HomeToggle)),
-        ),
-        (
-            GestureBinding {
                 modifiers: m.clone(),
                 trigger: GestureTrigger::PinchIn { fingers: 3 },
             },
             GestureConfigEntry::Threshold(ThresholdAction::Fixed(Action::ZoomToFit)),
-        ),
-        (
-            GestureBinding {
-                modifiers: m.clone(),
-                trigger: GestureTrigger::PinchOut { fingers: 3 },
-            },
-            GestureConfigEntry::Threshold(ThresholdAction::Fixed(Action::HomeToggle)),
         ),
         // Hold
         (

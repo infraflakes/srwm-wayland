@@ -144,14 +144,6 @@ pub fn spawn_command(cmd: &str) {
     log_err("spawn command", child.spawn());
 }
 
-/// Saved viewport state for HomeToggle return — includes optional fullscreen window.
-#[derive(Clone)]
-pub struct HomeReturn {
-    pub camera: Point<f64, Logical>,
-    pub zoom: f64,
-    pub fullscreen_window: Option<Window>,
-}
-
 /// Saved state for a fullscreen window — restored on exit.
 pub struct FullscreenState {
     pub window: Window,
@@ -184,8 +176,6 @@ pub struct OutputState {
     /// Physical arrangement position in layout space.
     /// (0,0) for single output; from config for multi-monitor.
     pub layout_position: Point<i32, Logical>,
-    /// Saved home position for HomeToggle (per-output).
-    pub home_return: Option<HomeReturn>,
 }
 
 /// Initialize per-output state on a newly created output.
@@ -215,7 +205,6 @@ pub fn init_output_state(
             last_rendered_camera: Point::from((f64::NAN, f64::NAN)),
             last_frame_instant: Instant::now(),
             layout_position,
-            home_return: None,
         })
     });
 }
@@ -1533,7 +1522,6 @@ mod tests {
             last_rendered_camera: Point::from(camera),
             last_frame_instant: Instant::now(),
             layout_position: Point::from(layout_position),
-            home_return: None,
         }
     }
 

@@ -4,7 +4,7 @@ use smithay::{
     wayland::seat::WaylandFocus,
 };
 
-use crate::state::{FocusTarget, HomeReturn, Srwc};
+use crate::state::Srwc;
 use srwc::canvas::{self};
 use srwc::config::Action;
 use srwc::window_ext::WindowExt;
@@ -165,7 +165,6 @@ impl Srwc {
                 #[derive(Clone, PartialEq)]
                 enum NavTarget {
                     Window(smithay::desktop::Window),
-                    Anchor(Point<f64, smithay::utils::Logical>),
                 }
 
                 let keyboard = self.keyboard();
@@ -227,31 +226,10 @@ impl Srwc {
                         (NavTarget::Window(w.clone()), point)
                     });
 
-                let anchors = self
-                    .config
-                    .nav
-                    .anchors
-                    .iter()
-                    .map(|&p| (NavTarget::Anchor(p), p));
-
-                let nearest =
-                    canvas::find_nearest(origin, dir, windows.chain(anchors), skip.as_ref());
+                let nearest = canvas::find_nearest(origin, dir, windows, skip.as_ref());
                 match nearest {
                     Some(NavTarget::Window(w)) => {
                         self.navigate_to_window(&w, false);
-                    }
-                    Some(NavTarget::Anchor(p)) => {
-                        // Unfocus so next CenterNearest searches from viewport center (= this anchor)
-                        let serial = smithay::utils::SERIAL_COUNTER.next_serial();
-                        let keyboard = self.keyboard();
-                        keyboard.set_focus(self, None::<FocusTarget>, serial);
-                        let vc = self.usable_center_screen();
-                        self.with_output_state(|os| {
-                            os.momentum.stop();
-                            let zoom = os.zoom;
-                            os.camera_target =
-                                Some(Point::from((p.x - vc.x / zoom, p.y - vc.y / zoom)));
-                        });
                     }
                     None => {}
                 }
@@ -277,76 +255,6 @@ impl Srwc {
                 if let Some(window) = self.focus_history.get(idx).cloned() {
                     self.navigate_to_window(&window, false);
                 }
-            }
-            Action::HomeToggle => {
-                let viewport_size = self.get_viewport_size();
-                let (zoom, camera) = self
-                    .with_output_state(|os| (os.zoom, os.camera))
-                    .unwrap_or((1.0, Point::default()));
-
-                // At home means zoom ≈ 1.0 AND origin visible
-                let at_home = (zoom - 1.0).abs() < 0.01
-                    && canvas::is_origin_visible(camera, viewport_size, zoom);
-
-                if at_home {
-                    // We're at home — return to saved position
-                    let ret = self.with_output_state(|os| os.home_return.take()).flatten();
-                    if let Some(ret) = ret {
-                        let can_fullscreen = ret
-                            .fullscreen_window
-                            .as_ref()
-                            .is_some_and(|w| self.space.elements().any(|e| e == w));
-                        if can_fullscreen {
-                            // Set camera/zoom directly — enter_fullscreen locks the viewport
-                            self.with_output_state(|os| {
-                                os.camera = ret.camera;
-                                os.zoom = ret.zoom;
-                            });
-                            self.enter_fullscreen(ret.fullscreen_window.as_ref().unwrap());
-                        } else {
-                            let vc = self.usable_center_screen();
-                            self.with_output_state(|os| {
-                                os.zoom_animation_center = Some(Point::from((
-                                    ret.camera.x + vc.x / ret.zoom,
-                                    ret.camera.y + vc.y / ret.zoom,
-                                )));
-                                os.camera_target = Some(ret.camera);
-                                os.zoom_target = Some(ret.zoom);
-                            });
-                        }
-                    }
-                } else {
-                    // Not at home — save current position+zoom and go home at zoom=1.0
-                    self.with_output_state(|os| {
-                        os.home_return = Some(HomeReturn {
-                            camera,
-                            zoom,
-                            fullscreen_window: was_fullscreen.clone(),
-                        });
-                        os.overview_return = None;
-                        let vc = if let Some(output) = self.active_output() {
-                            crate::state::usable_center_for_output(&output)
-                        } else {
-                            Point::default()
-                        };
-                        let home = Point::from((-vc.x, -vc.y));
-                        os.zoom_animation_center = Some(Point::from((0.0, 0.0)));
-                        os.camera_target = Some(home);
-                        os.zoom_target = Some(1.0);
-                    });
-                }
-            }
-            Action::GoToPosition(x, y) => {
-                self.with_output_state(|os| {
-                    let Some(output) = self.active_output() else {
-                        return;
-                    };
-                    let vc = crate::state::usable_center_for_output(&output);
-                    let zoom = os.zoom;
-                    let target_camera = Point::from((x - vc.x / zoom, -y - vc.y / zoom));
-                    os.overview_return = None;
-                    os.camera_target = Some(target_camera);
-                });
             }
             Action::ZoomIn => {
                 let new_zoom = self
@@ -407,11 +315,7 @@ impl Srwc {
                                 let size = w.geometry().size;
                                 (loc, size)
                             });
-                        let anchors =
-                            self.config.nav.anchors.iter().map(|p| {
-                                (Point::from((p.x as i32, p.y as i32)), Size::from((0, 0)))
-                            });
-                        let bbox = canvas::all_windows_bbox(windows.chain(anchors));
+                        let bbox = canvas::all_windows_bbox(windows);
                         if let Some(bbox) = bbox {
                             let fit_zoom =
                                 canvas::zoom_to_fit(bbox, viewport, self.config.zoom.fit_padding);

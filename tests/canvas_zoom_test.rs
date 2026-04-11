@@ -1,82 +1,8 @@
 use smithay::utils::{Logical, Point, Rectangle, Size};
 use srwc::canvas::{
-    MIN_ZOOM_FLOOR, all_windows_bbox, is_origin_visible, snap_zoom, visible_canvas_rect,
-    zoom_anchor_camera, zoom_to_fit,
+    MIN_ZOOM_FLOOR, all_windows_bbox, snap_zoom, visible_canvas_rect, zoom_anchor_camera,
+    zoom_to_fit,
 };
-
-// --- is_origin_visible tests ---
-
-fn vp(w: i32, h: i32) -> Size<i32, Logical> {
-    Size::from((w, h))
-}
-
-fn cam(x: f64, y: f64) -> Point<f64, Logical> {
-    Point::from((x, y))
-}
-
-#[test]
-fn origin_visible_when_camera_centers_on_origin() {
-    // camera = (-960, -540) → viewport spans [-960..960, -540..540] — origin is inside
-    assert!(is_origin_visible(cam(-960.0, -540.0), vp(1920, 1080), 1.0));
-}
-
-#[test]
-fn origin_visible_at_camera_zero() {
-    // camera = (0, 0) → viewport spans [0..1920, 0..1080] — origin is at top-left corner
-    assert!(is_origin_visible(cam(0.0, 0.0), vp(1920, 1080), 1.0));
-}
-
-#[test]
-fn origin_not_visible_when_scrolled_far_right() {
-    // camera = (500, 0) → viewport spans [500..2420, 0..1080] — origin is left of viewport
-    assert!(!is_origin_visible(cam(500.0, 0.0), vp(1920, 1080), 1.0));
-}
-
-#[test]
-fn origin_not_visible_when_scrolled_far_left() {
-    // camera = (-2000, 0) → viewport spans [-2000..-80, 0..1080] — origin is right of viewport
-    assert!(!is_origin_visible(cam(-2000.0, 0.0), vp(1920, 1080), 1.0));
-}
-
-#[test]
-fn origin_not_visible_when_scrolled_far_down() {
-    // camera = (0, 500) → viewport spans [0..1920, 500..1580] — origin is above viewport
-    assert!(!is_origin_visible(cam(0.0, 500.0), vp(1920, 1080), 1.0));
-}
-
-#[test]
-fn origin_visible_at_bottom_right_edge() {
-    // camera = (-1920, -1080) → viewport spans [-1920..0, -1080..0] — origin at exact corner
-    assert!(is_origin_visible(
-        cam(-1920.0, -1080.0),
-        vp(1920, 1080),
-        1.0
-    ));
-}
-
-#[test]
-fn origin_not_visible_just_past_edge() {
-    // camera = (-1920.1, -1080) → viewport x spans [-1920.1..-0.1] — origin at x=0 is outside
-    assert!(!is_origin_visible(
-        cam(-1920.1, -1080.0),
-        vp(1920, 1080),
-        1.0
-    ));
-}
-
-#[test]
-fn origin_visible_with_zoom_half_extends_visible_area() {
-    // camera = (-2000, 0), viewport 1920x1080, zoom 0.5
-    // visible_w = 1920/0.5 = 3840 → viewport spans [-2000..1840] — origin at 0 is inside
-    assert!(is_origin_visible(cam(-2000.0, 0.0), vp(1920, 1080), 0.5));
-}
-
-#[test]
-fn origin_not_visible_at_zoom_half_when_too_far() {
-    // camera = (-4000, 0), viewport 1920x1080, zoom 0.5
-    // visible_w = 3840 → viewport spans [-4000..-160] — origin at 0 is outside
-    assert!(!is_origin_visible(cam(-4000.0, 0.0), vp(1920, 1080), 0.5));
-}
 
 // --- zoom_anchor_camera tests ---
 

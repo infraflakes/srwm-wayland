@@ -94,7 +94,7 @@ Infinite 2D canvas with viewport panning, zoom, and scroll momentum. A quick fli
 
 ### Window navigation
 
-Jump to the nearest window in any direction via cone search. MRU cycling (`Alt-Tab`) with hold-to-commit. Zoom-to-fit shows all windows at once. Configurable anchors act as navigation targets for directional jumps.
+Jump to the nearest window in any direction via cone search. MRU cycling (`Alt-Tab`) with hold-to-commit. Zoom-to-fit shows all windows at once.
 
 | Input                        | Action                                     |
 | ---------------------------- | ------------------------------------------ |
@@ -102,9 +102,7 @@ Jump to the nearest window in any direction via cone search. MRU cycling (`Alt-T
 | `Mod` + arrow                | Jump to nearest window in direction        |
 | `Alt-Tab` / `Alt-Shift-Tab`  | Cycle windows (MRU)                        |
 | 4-finger pinch in / `Mod+W`  | Zoom-to-fit (overview)                     |
-| 4-finger pinch out / `Mod+A` | Home toggle (origin and back)              |
 | 4-finger hold / `Mod+C`      | Center focused window                      |
-| `Mod+1-4`                    | Jump to bookmarked canvas position         |
 
 ### Move, resize, maximize
 

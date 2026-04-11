@@ -189,19 +189,6 @@ fn super_shift_return_returns_none() {
     assert!(result.is_none(), "Super+Shift+Return should not be bound");
 }
 
-// ── Super+a → HomeToggle ─────────────────────────────────────────────────
-
-#[test]
-fn super_a_resolves_to_home_toggle() {
-    let config = Config::default();
-    let result = config.lookup(&logo(), Keysym::from(keysyms::KEY_a));
-    assert!(result.is_some(), "Super+a should be bound");
-    assert!(
-        matches!(result.unwrap(), Action::HomeToggle),
-        "Super+a should resolve to HomeToggle"
-    );
-}
-
 // ── Super+c → CenterWindow ───────────────────────────────────────────────
 
 #[test]

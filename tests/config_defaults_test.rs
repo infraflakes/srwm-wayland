@@ -41,14 +41,6 @@ fn nav_default_animation_speed() {
     assert!((NavigationConfig::default().animation_speed - 0.3).abs() < f64::EPSILON);
 }
 
-#[test]
-fn nav_default_anchors_has_origin() {
-    let nav = NavigationConfig::default();
-    assert_eq!(nav.anchors.len(), 1);
-    assert!((nav.anchors[0].x).abs() < f64::EPSILON);
-    assert!((nav.anchors[0].y).abs() < f64::EPSILON);
-}
-
 // ── ZoomConfig defaults ──────────────────────────────────────────────
 
 #[test]

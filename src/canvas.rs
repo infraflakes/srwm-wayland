@@ -83,18 +83,6 @@ pub fn visible_fraction(
     (iw * ih) / area
 }
 
-/// Check whether the canvas origin (0, 0) is visible in the current viewport.
-/// At zoom < 1.0, the visible area is larger: viewport_size / zoom.
-pub fn is_origin_visible(
-    camera: Point<f64, Logical>,
-    viewport_size: Size<i32, Logical>,
-    zoom: f64,
-) -> bool {
-    let visible_w = viewport_size.w as f64 / zoom;
-    let visible_h = viewport_size.h as f64 / zoom;
-    camera.x <= 0.0 && 0.0 <= camera.x + visible_w && camera.y <= 0.0 && 0.0 <= camera.y + visible_h
-}
-
 /// The canvas rectangle visible at the current camera + zoom.
 /// Used to cull windows outside the viewport for `render_elements_for_region`.
 ///
@@ -683,7 +671,7 @@ mod tests {
     fn friction_mid_speed_interpolates() {
         let f = speed_dependent_friction(0.92, 1250.0);
         // t = 0.5, low = 0.86, high = 0.95
-        let expected = 0.86 + 0.5 * (0.95 - 0.86); // = 0.905  
+        let expected = 0.86 + 0.5 * (0.95 - 0.86); // = 0.905
         assert!(
             (f - expected).abs() < 1e-9,
             "mid-speed should interpolate to {expected}, got {f}"

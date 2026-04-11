@@ -107,21 +107,6 @@ pub fn parse_action(s: &str) -> Result<Action, String> {
                 )),
             }
         }
-        "home-toggle" => Ok(Action::HomeToggle),
-        "go-to" => {
-            let arg = arg.ok_or("go-to requires <x> <y> coordinates")?;
-            let parts: Vec<&str> = arg.split_whitespace().collect();
-            if parts.len() != 2 {
-                return Err("go-to requires exactly two coordinates: go-to <x> <y>".to_string());
-            }
-            let x: f64 = parts[0]
-                .parse()
-                .map_err(|_| format!("invalid x coordinate: {}", parts[0]))?;
-            let y: f64 = parts[1]
-                .parse()
-                .map_err(|_| format!("invalid y coordinate: {}", parts[1]))?;
-            Ok(Action::GoToPosition(x, y))
-        }
         "zoom-in" => Ok(Action::ZoomIn),
         "zoom-out" => Ok(Action::ZoomOut),
         "zoom-reset" => Ok(Action::ZoomReset),
@@ -254,7 +239,7 @@ fn parse_continuous_action(s: &str) -> Option<ContinuousAction> {
 fn parse_threshold_action(s: &str) -> Result<Option<ThresholdAction>, String> {
     match s {
         "center-nearest" => Ok(Some(ThresholdAction::CenterNearest)),
-        "center-window" | "home-toggle" | "zoom-to-fit" | "zoom-in" | "zoom-out" | "zoom-reset"
+        "center-window" | "zoom-to-fit" | "zoom-in" | "zoom-out" | "zoom-reset"
         | "toggle-fullscreen" | "fit-window" | "reload-config" | "quit" | "close-window" => {
             let action = parse_action(s)?;
             Ok(Some(ThresholdAction::Fixed(action)))

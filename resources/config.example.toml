@@ -57,11 +57,6 @@
 # animation_speed = 0.3       # camera lerp factor (higher = faster)
 # nudge_step = 20             # px per nudge-window action (mod-shift-arrow by default)
 # pan_step = 100.0            # px per pan-viewport action (mod-ctrl-arrow by default)
-# Anchors: canvas points discoverable by center-nearest (4-finger swipe / Mod+Arrow)
-# even when no window is there. Uses Y-up coordinate system.
-# anchors = [[0, 0]]
-# Example with 4 corners:
-# # anchors = [[0, 0], [-1750, 1750], [1750, 1750], [1750, -1750], [-1750, -1750]]
 
 [navigation.edge_pan]
 # zone = 100.0                # activation zone width (px from viewport edge)
@@ -111,10 +106,8 @@
 #   center-nearest <dir>    — navigate to nearest window in direction
 #   cycle-windows forward   — Alt-Tab style window cycling
 #   cycle-windows backward  — reverse cycle
-#   home-toggle             — toggle between current position and origin
 #   zoom-in / zoom-out      — step zoom
 #   zoom-reset              — zoom to 1.0
-#   go-to <x> <y>           — jump camera to canvas position (bookmarks, Y-up)
 #   zoom-to-fit             — fit all windows in viewport
 #   toggle-fullscreen       — toggle focused window fullscreen
 #   fit-window              — toggle maximize: centers + resets zoom + fills viewport; restore only resizes back
@@ -133,7 +126,6 @@
 # "mod+m" = "fit-window"
 # "mod+c" = "center-window"
 
-# "mod+a" = "home-toggle"
 # "mod+up" = "center-nearest up"
 # "mod+down" = "center-nearest down"
 # "mod+left" = "center-nearest left"
@@ -153,10 +145,6 @@
 # "mod+0" = "zoom-reset"
 # "mod+z" = "zoom-reset"
 # "mod+w" = "zoom-to-fit"
-# "mod+1" = "go-to -1750 1750"     # top-left bookmark
-# "mod+2" = "go-to 1750 1750"      # top-right bookmark
-# "mod+3" = "go-to 1750 -1750"     # bottom-right bookmark
-# "mod+4" = "go-to -1750 -1750"    # bottom-left bookmark
 # "mod+alt+up" = "send-to-output up"        # move window to output above
 # "mod+alt+down" = "send-to-output down"
 # "mod+alt+left" = "send-to-output left"
@@ -212,7 +200,7 @@
 #   N-finger-hold             — threshold only (fires on release)
 #
 # Continuous actions: pan-viewport, zoom, move-window, resize-window
-# Threshold actions: center-nearest, center-window, home-toggle, zoom-to-fit, fit-window, exec <cmd>, etc.
+# Threshold actions: center-nearest, center-window, zoom-to-fit, fit-window, exec <cmd>, etc.
 
 # Gesture thresholds — tune for your touchpad size.
 [gestures]
@@ -242,9 +230,7 @@
 # "mod+2-finger-pinch" = "zoom"             # mod overrides app forwarding
 # "3-finger-pinch" = "zoom"                 # continuous
 # "4-finger-pinch-in" = "zoom-to-fit"       # threshold
-# "4-finger-pinch-out" = "home-toggle"      # threshold
 # "mod+3-finger-pinch-in" = "zoom-to-fit"
-# "mod+3-finger-pinch-out" = "home-toggle"
 # "4-finger-hold" = "center-window"         # fires on release
 # "mod+3-finger-hold" = "center-window"
 

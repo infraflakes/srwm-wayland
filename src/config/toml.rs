@@ -97,7 +97,6 @@ pub(super) struct NavigationConfig {
     pub trackpad_speed: Option<f64>,
     pub mouse_speed: Option<f64>,
     pub friction: Option<f64>,
-    pub anchors: Option<Vec<[f64; 2]>>,
     pub edge_pan: EdgePanConfig,
 }
 
