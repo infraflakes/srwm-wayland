@@ -1311,9 +1311,27 @@ pub fn refresh_foreign_toplevels(state: &mut crate::state::Srwc) {
 
 /// Post-render: frame callbacks, space cleanup.
 pub fn post_render(state: &mut crate::state::Srwc, output: &Output) {
-    // Frame callbacks to windows
     let time = state.start_time.elapsed();
+
+    // Only send frame callbacks to visible windows — off-screen clients
+    // naturally throttle to zero FPS without callbacks.
+    let (camera, zoom) = {
+        let os = crate::state::output_state(output);
+        (os.camera, os.zoom)
+    };
+    let viewport_size = crate::state::output_logical_size(output);
+    let visible_rect = canvas::visible_canvas_rect(camera.to_i32_round(), viewport_size, zoom);
+
     for window in state.space.elements() {
+        let Some(loc) = state.space.element_location(window) else {
+            continue;
+        };
+        let geom_loc = window.geometry().loc;
+        let mut bbox = window.bbox();
+        bbox.loc += loc - geom_loc;
+        if !visible_rect.overlaps(bbox) {
+            continue;
+        }
         window.send_frame(output, time, Some(Duration::ZERO), |_, _| {
             Some(output.clone())
         });
