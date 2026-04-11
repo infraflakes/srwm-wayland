@@ -75,7 +75,7 @@
             patchelf --add-rpath "${pkgs.lib.makeLibraryPath runtimeLibs}" $out/bin/srwc
             wrapProgram $out/bin/srwc \
               --prefix XCURSOR_PATH : "${pkgs.adwaita-icon-theme}/share/icons" \
-              --prefix PATH : "${pkgs.lib.makeBinPath [pkgs.xdg-utils pkgs.libnotify]}"
+              --prefix PATH : "${pkgs.lib.makeBinPath [pkgs.xdg-utils pkgs.libnotify pkgs.xwayland-satellite]}"
           '';
 
           postInstall = ''
