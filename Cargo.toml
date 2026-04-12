@@ -6,8 +6,8 @@ license = "GPL-3.0-or-later"
 authors = ["Nguyen Bao Truong <infraflakes@proton.me>"]
 
 [dependencies]
-smithay-drm-extras = { git = "https://github.com/Smithay/smithay.git", rev = "5312d5c" }
-smithay = { git = "https://github.com/Smithay/smithay.git", rev = "5312d5c", default-features = false, features = [
+smithay-drm-extras = { git = "https://github.com/infraflakes/smithay.git"}
+smithay = { git = "https://github.com/infraflakes/smithay.git", default-features = false, features = [
     "backend_winit",
     "backend_udev",
     "backend_drm",
