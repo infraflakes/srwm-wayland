@@ -1,6 +1,5 @@
 use smithay::{
-    input::pointer::MotionEvent,
-    utils::{Point, SERIAL_COUNTER, Size},
+    utils::{Point, Size},
     wayland::seat::WaylandFocus,
 };
 
@@ -81,39 +80,18 @@ impl Srwc {
                 }
             }
             Action::PanViewport(dir) => {
-                let (_zoom, delta) = self
-                    .with_output_state(|os| {
-                        os.camera_target = None;
-                        os.zoom_target = None;
-                        os.zoom_animation_center = None;
-                        os.overview_return = None;
-                        let zoom = os.zoom;
-                        let step = self.config.nav.pan_step / zoom;
-                        let (ux, uy) = dir.to_unit_vec();
-                        let delta: Point<f64, smithay::utils::Logical> =
-                            Point::from((ux * step, uy * step));
-                        os.camera += delta;
-                        (zoom, delta)
-                    })
-                    .unwrap_or_default();
-                self.update_output_from_camera();
-
-                // Shift pointer so cursor stays at the same screen position
-                let pointer = self.pointer();
-                let pos = pointer.current_location();
-                let new_pos = pos + delta;
-                let under = self.surface_under(new_pos, None);
-                let serial = SERIAL_COUNTER.next_serial();
-                pointer.motion(
-                    self,
-                    under,
-                    &MotionEvent {
-                        location: new_pos,
-                        serial,
-                        time: self.start_time.elapsed().as_millis() as u32,
-                    },
-                );
-                pointer.frame(self);
+                self.with_output_state(|os| {
+                    os.zoom_target = None;
+                    os.zoom_animation_center = None;
+                    os.overview_return = None;
+                    let zoom = os.zoom;
+                    let step = self.config.nav.pan_step / zoom;
+                    let (ux, uy) = dir.to_unit_vec();
+                    let delta: Point<f64, smithay::utils::Logical> =
+                        Point::from((ux * step, uy * step));
+                    let base = os.camera_target.unwrap_or(os.camera);
+                    os.camera_target = Some(base + delta);
+                });
             }
             Action::CenterWindow => {
                 let keyboard = self.keyboard();
