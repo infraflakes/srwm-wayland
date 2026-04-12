@@ -4,8 +4,8 @@ use std::time::Duration;
 use smithay::{
     backend::renderer::{
         element::{
-            Element, Id, Kind, RenderElement, memory::MemoryRenderBufferRenderElement,
-            render_elements, texture::TextureRenderElement, utils::RescaleRenderElement,
+            Element, Kind, RenderElement, memory::MemoryRenderBufferRenderElement, render_elements,
+            texture::TextureRenderElement, utils::RescaleRenderElement,
         },
         gles::{
             GlesError, GlesFrame, GlesRenderer, GlesTexProgram, GlesTexture, Uniform, UniformName,
@@ -1063,11 +1063,11 @@ pub fn compose_frame(
 
     let bg_elements: Vec<OutputRenderElements> =
         // Wallpaper: static image, no zoom applied (rendered fullscreen fixed)
-        if let Some(tex) = state.render.cached_wallpaper.get(&output.name()) {
+        if let Some((tex, id)) = state.render.cached_wallpaper.get(&output.name()) {
             let output_size = crate::state::output_logical_size(output);
             use smithay::backend::renderer::Renderer;
             let elem = TextureRenderElement::from_static_texture(
-                Id::new(),
+                id.clone(),
                 renderer.context_id(),
                 Point::from((0.0f64, 0.0f64)),
                 tex.clone(),

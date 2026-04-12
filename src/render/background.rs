@@ -241,7 +241,7 @@ pub fn init_background(
                         state
                             .render
                             .cached_wallpaper
-                            .insert(output_name.to_string(), texture);
+                            .insert(output_name.to_string(), (texture, Id::new()));
                         return;
                     }
                     Err(e) => {
@@ -259,7 +259,6 @@ pub fn init_background(
 
     // Try loading tile image first (if configured and no shader_path)
     if state.config.background.shader_path.is_none()
-        && state.config.background.wallpaper_path.is_none()
         && let Some(path) = state.config.background.tile_path.as_deref()
     {
         match image::open(path) {
