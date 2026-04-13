@@ -1,3 +1,4 @@
+use crate::screencasting::pw_utils::CastTarget;
 use std::borrow::Cow;
 use std::time::Duration;
 
@@ -1339,16 +1340,19 @@ pub fn post_render(state: &mut crate::state::Srwc, output: &Output) {
         let mut bbox = window.bbox();
         bbox.loc += loc - geom_loc;
         if !visible_rect.overlaps(bbox) {
-            let is_being_cast = state.screencasting.as_ref().is_some_and(|sc| {
-                window.wl_surface().is_some_and(|s| {
-                    let wl_id = u64::from(s.id().protocol_id());
-                    sc.casts.iter().any(|c| {
-                        c.is_active()
-                            && c.target
-                                == crate::screencasting::pw_utils::CastTarget::Window { id: wl_id }
+            // For off-screen windows being screencast, only send the frame callback
+            // from the focused output's post_render pass — avoids N callbacks on
+            // N-output setups.
+            let is_focused = state.focused_output.as_ref().is_some_and(|fo| fo == output);
+            let is_being_cast = is_focused
+                && state.screencasting.as_ref().is_some_and(|sc| {
+                    window.wl_surface().is_some_and(|s| {
+                        let wl_id = u64::from(s.id().protocol_id());
+                        sc.casts
+                            .iter()
+                            .any(|c| c.is_active() && c.target == CastTarget::Window { id: wl_id })
                     })
-                })
-            });
+                });
             if !is_being_cast {
                 continue;
             }
