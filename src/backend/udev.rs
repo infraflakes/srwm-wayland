@@ -504,6 +504,7 @@ pub fn init_udev(
                                         for old in &virtual_outputs {
                                             data.space.unmap_output(old);
                                             data.render.cached_bg_elements.remove(&old.name());
+                                            data.render.cached_wallpaper.remove(&old.name());
                                             data.remove_capture_state(&old.name());
                                         }
                                         data.disconnected_outputs.clear();

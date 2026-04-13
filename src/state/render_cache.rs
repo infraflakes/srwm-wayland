@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use smithay::backend::renderer::element::Id;
 use smithay::backend::renderer::gles::element::PixelShaderElement;
 use smithay::backend::renderer::gles::{GlesPixelProgram, GlesTexProgram, GlesTexture};
 use smithay::reexports::wayland_server::backend::ObjectId;
@@ -23,8 +24,7 @@ pub struct RenderCache {
     pub csd_shadows: HashMap<ObjectId, (PixelShaderElement, (i32, i32))>,
     pub cached_bg_elements: HashMap<String, PixelShaderElement>,
     pub capture_state: HashMap<String, CaptureOutputState>,
-    pub tile_shader: Option<GlesTexProgram>,
-    pub cached_tile_bg: HashMap<String, crate::render::TileShaderElement>,
+    pub cached_wallpaper: HashMap<String, (GlesTexture, Id)>,
 }
 
 impl RenderCache {
@@ -44,8 +44,7 @@ impl RenderCache {
             csd_shadows: HashMap::new(),
             cached_bg_elements: HashMap::new(),
             capture_state: HashMap::new(),
-            tile_shader: None,
-            cached_tile_bg: HashMap::new(),
+            cached_wallpaper: HashMap::new(),
         }
     }
 

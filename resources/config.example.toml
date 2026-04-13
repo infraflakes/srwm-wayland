@@ -87,8 +87,8 @@
 
 [background]
 # Examples:
-# # shader_path = "~/.config/srwc/bg.glsl"   # custom GLSL fragment shader
-# # tile_path = "~/.config/srwc/tile.png"     # tiled image (mutually exclusive with shader)
+# shader_path = "~/.config/srwc/bg.glsl"   # custom GLSL fragment shader
+# wallpaper_path = "~/.config/srwc/wallpaper.png"  # static fullscreen image (not tiled, not zoomed)
 
 # Keyboard bindings: "Modifier+...+Keysym" = "action [arg]"
 # Merges with defaults. Use "none" to unbind a default binding.
