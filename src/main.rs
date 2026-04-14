@@ -125,6 +125,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    // Now create listening socket and advertise it to child processes
+    // BEFORE D-Bus connections (zbus receiver threads) are initialized.
+    let listening_socket = smithay::wayland::socket::ListeningSocketSource::new_auto()?;
+    let socket_name = listening_socket
+        .socket_name()
+        .to_string_lossy()
+        .into_owned();
+    tracing::info!("Listening on WAYLAND_DISPLAY={socket_name}");
+    // Standard Wayland session env vars for child processes.
+    // SAFETY: No threads have been spawned yet — Config::load() ran in
+    // Srwc::new() and backend init does not start background threads.
+    // D-Bus connections (which spawn zbus receiver threads) are created below.
+    unsafe {
+        std::env::set_var("WAYLAND_DISPLAY", &socket_name);
+        std::env::set_var("XDG_SESSION_TYPE", "wayland");
+        std::env::set_var("XDG_CURRENT_DESKTOP", "srwc");
+        std::env::set_var("XDG_SESSION_CLASS", "user");
+        std::env::set_var("XDG_SESSION_DESKTOP", "srwc");
+    }
+
+    let is_session = backend_name == "udev";
+    let has_systemd = is_session && has_systemctl();
+    data.has_systemd = has_systemd;
+
     // Initialize screencasting + D-Bus ScreenCast service (udev only)
     if backend_name == "udev" {
         use std::collections::HashMap;
@@ -260,28 +284,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(smithay::reexports::calloop::PostAction::Continue)
         })?;
 
-    // Now create listening socket and advertise it to child processes
-    let listening_socket = smithay::wayland::socket::ListeningSocketSource::new_auto()?;
-    let socket_name = listening_socket
-        .socket_name()
-        .to_string_lossy()
-        .into_owned();
-    tracing::info!("Listening on WAYLAND_DISPLAY={socket_name}");
-    // Standard Wayland session env vars for child processes.
-    // SAFETY: called before any threads are spawned; env vars are process-global
-    // but this happens before any multi-threaded code runs.
-    unsafe {
-        std::env::set_var("WAYLAND_DISPLAY", &socket_name);
-        std::env::set_var("XDG_SESSION_TYPE", "wayland");
-        std::env::set_var("XDG_CURRENT_DESKTOP", "srwc");
-        std::env::set_var("XDG_SESSION_CLASS", "user");
-        std::env::set_var("XDG_SESSION_DESKTOP", "srwc");
-    }
-
-    let is_session = backend_name == "udev";
-    let has_systemd = is_session && has_systemctl();
-    data.has_systemd = has_systemd;
-
+    // Initialize screencasting + D-Bus ScreenCast service (udev only)
     if has_systemd {
         // systemd-specific: start graphical-session targets via transient anchor
         let _ = std::process::Command::new("systemctl")
