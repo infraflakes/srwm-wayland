@@ -166,32 +166,8 @@ pub fn init_winit(
             // --- Flush Wayland client messages before rendering ---
             data.display_handle.flush_clients().ok();
 
-            // --- Delta time ---
-            let now = std::time::Instant::now();
-            let dt = {
-                let mut os = crate::state::output_state(&output);
-                let dt = (now - os.last_frame_instant).min(std::time::Duration::from_millis(33));
-                os.last_frame_instant = now;
-                dt
-            };
-
-            // --- Key repeat for compositor bindings ---
-            data.apply_key_repeat();
-
-            // --- Scroll momentum ---
-            data.apply_scroll_momentum(dt);
-
-            // --- Edge auto-pan (window drag near viewport edges) ---
-            data.apply_edge_pan();
-
-            // --- Zoom animation (before camera so recomputed target is used) ---
-            data.apply_zoom_animation(dt);
-
-            // --- Camera animation (window navigation) ---
-            data.apply_camera_animation(dt);
-
-            // --- Exec loading cursor timeout ---
-            data.check_exec_cursor_timeout();
+            // --- Tick all animations (key repeat, momentum, edge pan, zoom, camera, cursor timeout) ---
+            data.tick_all_animations();
 
             // --- Read per-output state for this frame ---
             let (cur_camera, cur_zoom, last_cam, last_zoom) = {

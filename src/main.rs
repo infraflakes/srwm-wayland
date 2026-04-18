@@ -308,6 +308,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let _ = std::process::Command::new("/bin/sh")
             .args(["-c", &cmd])
             .spawn()
+            .inspect_err(|e| tracing::warn!("Failed to import session environment to systemd: {e}"))
             .and_then(|mut c| c.wait());
         // Also update D-Bus activation environment
         update_dbus_activation_env();
